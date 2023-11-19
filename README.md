@@ -27,3 +27,44 @@ Se busca implementar una base de datos destinada a la gestión integral de los a
 ### Gestión de Reseñas:
 - Posibilidad para los usuarios huéspedes de dejar comentarios y calificaciones en propiedades después de una estancia.
 
+## Restricciones
+
+### Empleados
+- El correo electrónico y telefono de cada empleado debe ser único.
+- Cada empleado debe poseer un cargo
+
+### Propiedades:
+- Si la propiedad es una habitación, el numero de habitaciones de está será 1.
+- El número de habitaciones, baños y la capacidad de la propiedad deben ser valores enteros no negativos.
+- El valor por noche de la propiedad no puede ser negativo.
+
+### Huéspedes
+- Cada huésped debe tener un número de identificación único (dni).
+- El correo electrónico de cada huésped debe ser único.
+- 
+### Imágenes de Propiedades
+- Las imágenes deben pertenecer a una propiedad existente.
+
+### Servicios Adicionales:
+- Cada servicio adicional debe tener un nombre único.
+
+### Reservas:
+- La fecha de inicio de la reserva debe ser anterior a la fecha de finalización.
+- El estado de la reserva debe ser uno de los siguientes: "confirmada", "pendiente", "cancelada" o "completada".
+- Si una reserva es confirmada, significa que se registro un pago.
+- Una reserva en pendiente, no ha sido pagada.
+- Si una reserva es completada, significa que el cliente realizo el pago y acudio a la estadia.
+- Una reserva completada no podra ser reembolsada.
+- Una reserva cancelada, registrará reembolso, solo si ha sido pagada, es decir se encontraba en estado confirmada.
+
+### Pagos:
+- La fecha de pago debe ser igual o anterior a la fecha actual.
+- El valor del pago no puede ser negativo.
+
+### Reembolsos:
+- La fecha de reembolso debe ser igual o posterior a la fecha de pago asociada.
+- El valor del reembolso sera igual al valor del pago de la reserva cancelada.
+
+### Reseñas:
+- La calificación de la reseña debe estar en el rango de 1 a 5.
+- Un huésped solo puede hacer una reseña por propiedad.
