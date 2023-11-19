@@ -68,3 +68,11 @@ Se busca implementar una base de datos destinada a la gestión integral de los a
 ### Reseñas:
 - La calificación de la reseña debe estar en el rango de 1 a 5.
 - Un huésped solo puede hacer una reseña por propiedad.
+
+
+## Diseño 
+### Diagrama Entidad - Relacion
+![](ReadmeAssets/diagrama-entidad-relacion.png)
+
+### Diagrama Relacional
+![](ReadmeAssets/diagrama-relacional-db.png)
