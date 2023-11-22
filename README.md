@@ -41,7 +41,7 @@ Se busca implementar una base de datos destinada a la gestión integral de los a
 ### Huéspedes
 - Cada huésped debe tener un número de identificación único (dni).
 - El correo electrónico de cada huésped debe ser único.
-- 
+
 ### Imágenes de Propiedades
 - Las imágenes deben pertenecer a una propiedad existente.
 
@@ -58,7 +58,7 @@ Se busca implementar una base de datos destinada a la gestión integral de los a
 - Una reserva cancelada, registrará reembolso, solo si ha sido pagada, es decir se encontraba en estado confirmada.
 
 ### Pagos:
-- La fecha de pago debe ser igual o anterior a la fecha actual.
+- La fecha de pago debe ser igual o posterior a la fecha de reserva.
 - El valor del pago no puede ser negativo.
 
 ### Reembolsos:
