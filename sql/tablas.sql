@@ -30,7 +30,7 @@ CREATE TABLE detallePropiedad (
   idPropiedad int NOT NULL,
   capacidadHuespedes int NOT NULL,
   numHabitaciones int NOT NULL,
-  mascotas boolean NOT NULL,
+  mascotas enum("si", "no") NOT NULL,
   numBanos int NOT NULL,
   tipoPropiedad enum('casa', 'apartamento', 'habitacion') NOT NULL
 );
