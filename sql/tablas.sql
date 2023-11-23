@@ -36,7 +36,7 @@ CREATE TABLE detallePropiedad (
 );
 
 CREATE TABLE imgPropiedad (
-  idImgPropiedad int PRIMARY KEY,
+  idImgPropiedad int PRIMARY KEY AUTO_INCREMENT,
   idPropiedad int NOT NULL,
   urlImagen varchar(255) NOT NULL,
   descripcion varchar(255) NOT NULL
