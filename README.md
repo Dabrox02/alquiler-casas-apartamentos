@@ -20,7 +20,7 @@ Se requiere cubrir las siguientes necesidades:
 - Cada propiedad puede tener varios servicios adicionales como Wifi, zona de trabajo, lavadora, secadora, camara de seguridad, etc.
 
 ### Gestión de Reservas:
-- Creación de nuevas reservas con información de fechas de inicio y finalización, número de huéspedes.
+- Creación de nuevas reservas con información de fechas de inicio y finalización.
 - Seguimiento del estado de las reservas (confirmada, pendiente, cancelada, completada).
 - Cálculo automatico del precio total de la reserva basado en la duración de la estadía y el valor por noche.
   
