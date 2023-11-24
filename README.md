@@ -1,6 +1,10 @@
 ## Descripción del negocio
 
-Se busca implementar una base de datos destinada a la gestión integral de los alquileres de apartamentos, casas y habitaciones de la empresa "Viajemos Juntos" en Colombia. La base de datos deberá posibilitar las siguientes funcionalidades:
+"Viajemos Juntos" tiene como misión ofrecer experiencias de alojamiento inolvidables, brindando un servicio integral y de calidad en el alquiler de apartamentos, casas y habitaciones en toda Colombia. 
+
+Se requiere la implementación de una base de datos que tiene como objetivo centralizar y optimizar la gestión de los alquileres de propiedades. Esta herramienta permitirá administrar eficientemente la información relacionada con empleados, propiedades, reservas, pagos, reseñas y estados de entrega. Además, facilitará la toma de decisiones estratégicas y mejorará la experiencia tanto para los huéspedes como para los empleados.
+
+Se requiere cubrir las siguientes necesidades:
 
 ### Gestión de Empleados:
 - Registro detallado de empleados, incluyendo información como nombre, apellido, número de identificación, correo electrónico y número de teléfono.
@@ -26,6 +30,9 @@ Se busca implementar una base de datos destinada a la gestión integral de los a
 
 ### Gestión de Reseñas:
 - Posibilidad para los usuarios huéspedes de dejar comentarios y calificaciones en propiedades después de una estancia.
+
+### Gestion de reportes de entregas:
+- Permitir a los empleados registrar el estado de entrega de la propiedad reservada. 
 
 ## Restricciones
 
