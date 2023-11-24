@@ -107,6 +107,14 @@ CREATE TABLE resena (
   comentario varchar(255)
 );
 
+CREATE TABLE reporteEntrega (
+  idReporte int PRIMARY KEY AUTO_INCREMENT,
+  idEmpleado int NOT NULL,
+  idReserva int NOT NULL,
+  fechaReporte date NOT NULL,
+  detalle text NOT NULL
+);
+
 ALTER TABLE trabajaEn ADD CONSTRAINT fk_empleado_trabaja FOREIGN KEY (idEmpleado) REFERENCES empleado (idEmpleado);
 
 ALTER TABLE trabajaEn ADD CONSTRAINT fk_propiedad_trabaja FOREIGN KEY (idPropiedad) REFERENCES propiedad (idPropiedad);
@@ -134,3 +142,7 @@ ALTER TABLE reembolso ADD CONSTRAINT fk_pago_reembolso FOREIGN KEY (idPago) REFE
 ALTER TABLE resena ADD CONSTRAINT fk_huesped_resena FOREIGN KEY (idHuesped) REFERENCES huesped (idHuesped);
 
 ALTER TABLE resena ADD CONSTRAINT fk_propiedad_resena FOREIGN KEY (idPropiedad) REFERENCES propiedad (idPropiedad);
+
+ALTER TABLE reporteEntrega ADD CONSTRAINT fk_reserva_reporteEntrega FOREIGN KEY (idReserva) REFERENCES reserva (idReserva);
+
+ALTER TABLE reporteEntrega ADD CONSTRAINT fk_empleado_reporteEntrega FOREIGN KEY (idEmpleado) REFERENCES empleado (idEmpleado);
