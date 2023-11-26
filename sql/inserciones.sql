@@ -238,6 +238,7 @@ INSERT INTO reserva (idPropiedad, idHuesped, fechaReserva, fechaEntrada, diasEst
 (20, 17, '2023-12-14', '2024-01-08', 5, 'completada');
 
 
+-- EL VALOR DEL PAGO ES OMITIDO, YA QUE ES VERIFICADO Y CALCULADO POR UN TRIGGER
 INSERT INTO pago (idReserva, fechaPago, valorPago, medioPago) VALUES
 (1, '2023-11-25', 500000, 'tarjeta'), 
 (3, '2023-11-27', 140000, 'cheque'), 
@@ -251,3 +252,84 @@ INSERT INTO pago (idReserva, fechaPago, valorPago, medioPago) VALUES
 (17, '2023-12-11', 390000, 'cheque'), 
 (18, '2023-12-12', 280000, 'tarjeta'),
 (20, '2023-12-14', 290000, 'tarjeta');
+
+
+INSERT INTO servicioPropiedad (idPropiedad, idServicio)
+VALUES
+  (1, 5),
+  (1, 19),
+  (1, 10),
+  (2, 6),
+  (2, 8),
+  (3, 5),
+  (4, 7),
+  (4, 9),
+  (5, 6),
+  (6, 8),
+  (6, 10),
+  (7, 5),
+  (8, 7),
+  (8, 9),
+  (9, 6),
+  (10, 8),
+  (10, 10),
+  (11, 5),
+  (12, 7),
+  (12, 9),
+  (13, 6),
+  (14, 8),
+  (15, 1),
+  (15, 7);
+
+
+INSERT INTO resena (idHuesped, idPropiedad, calificacion, comentario)
+VALUES
+  (5, 1, 4, 'Buena experiencia, lugar acogedor'),
+  (14, 1, 5, 'Increíble, definitivamente regresaré'),
+  (3, 2, 3, 'Buena ubicación pero podría mejorar en algunos aspectos'),
+  (8, 3, 4, 'Personal amable y servicial'),
+  (12, 4, 5, 'Vistas impresionantes desde la terraza'),
+  (17, 5, 2, 'No cumplió con las expectativas, servicios insatisfactorios'),
+  (2, 6, 4, 'Perfecto para viajes de negocios'),
+  (20, 7, 5, 'Servicio de habitaciones rápido y eficiente'),
+  (11, 8, 3, 'Desayuno podría ser mejor'),
+  (7, 9, 4, 'Ambiente tranquilo y relajado'),
+  (6, 10, 5, 'Aceptan mascotas, ¡fantástico!'),
+  (9, 11, 3, 'Buena relación calidad-precio'),
+  (16, 12, 4, 'Muy limpio y bien mantenido'),
+  (4, 13, 5, 'Personal atento y servicial'),
+  (19, 14, 2, 'Problemas con la conexión Wi-Fi'),
+  (1, 15, 4, 'Buenas instalaciones para eventos'),
+  (10, 16, 5, 'Sauna disponible, una gran ventaja'),
+  (18, 17, 3, 'Inconvenientes con el estacionamiento'),
+  (15, 18, 4, 'Recepción 24/7, muy útil'),
+  (13, 19, 5, 'Muy recomendado, volveré pronto'),
+  (9, 2, 4, 'Buena ubicación y servicio'),
+  (18, 3, 5, 'Increíble experiencia, vistas impresionantes'),
+  (7, 4, 3, 'Podría mejorar en la limpieza'),
+  (15, 5, 4, 'Personal atento y amable'),
+  (5, 6, 5, 'Excelente para estancias cortas'),
+  (11, 7, 2, 'No cumplió con las expectativas'),
+  (20, 8, 4, 'Servicio de habitaciones eficiente'),
+  (14, 9, 5, 'Desayuno variado y delicioso'),
+  (8, 10, 3, 'Ambiente tranquilo pero instalaciones antiguas'),
+  (1, 11, 4, 'Aceptan mascotas, un gran plus'),
+  (12, 12, 5, 'Buena relación calidad-precio'),
+  (13, 13, 3, 'Necesita mejoras en la atención al cliente'),
+  (6, 14, 4, 'Limpieza impecable y personal amigable'),
+  (16, 15, 5, 'Vistas panorámicas desde la terraza'),
+  (3, 16, 2, 'Problemas con la conexión Wi-Fi'),
+  (10, 17, 4, 'Instalaciones para eventos bien equipadas'),
+  (17, 18, 5, 'Sauna y spa de calidad'),
+  (19, 19, 3, 'Estacionamiento difícil de encontrar'),
+  (4, 20, 4, 'Atención 24/7, muy útil'),
+  (2, 1, 5, 'Una estancia inolvidable');
+
+
+INSERT INTO reporteEntrega (idEmpleado, idReserva, fechaReporte, detalle)
+VALUES
+  (1, 3, '2023-01-15', 'Entrega de llaves y detalles adicionales registrados'),
+  (6, 6, '2023-02-10', 'Check-in realizado con éxito, sin problemas reportados'),
+  (8, 10, '2023-03-05', 'Revisión completa de la propiedad, todo en orden'),
+  (1, 13, '2023-04-01', 'Se realizaron las entregas según lo planeado'),
+  (8, 17, '2023-05-18', 'Check-in y entrega de documentación completados');

@@ -126,7 +126,7 @@ BEGIN
 		
 	IF @fechaReserva > NEW.fechaPago THEN
 		SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'No se puede generar un antes de una reserva.';
+        SET MESSAGE_TEXT = 'No se puede generar un pago antes de una reserva.';
     END IF;
 END;//
 DELIMITER ;
@@ -145,9 +145,48 @@ BEGIN
 		
 	IF @fechaReserva > NEW.fechaPago THEN
 		SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'No se puede generar un pago antes de una reserva.';
+        SET MESSAGE_TEXT = 'No se puede generar un pago con fecha anterior a una reserva.';
     END IF;
 END;//
 DELIMITER ;
 
+
+DROP TRIGGER IF EXISTS bef_ins_reporteEntrega_check;
+DELIMITER //
+CREATE TRIGGER bef_ins_reporteEntrega_check 
+BEFORE INSERT  ON reporteEntrega
+FOR EACH ROW
+BEGIN
+	SET @estadoReserva = (SELECT re.estado FROM reserva re WHERE re.idReserva = NEW.idReserva);
+	SET @empleadoEntrega = (SELECT car.nombre FROM empleado em, cargo car WHERE em.idCargo = car.idCargo AND em.idEmpleado = NEW.idEmpleado); 
+    IF @empleadoEntrega != 'recepcionista' THEN
+		SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Solo empleado Recepcionista puede hacer reporte de entrega';
+	END IF;
+	IF @estadoReserva != 'completada' THEN
+		SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'No se ha completado la reserva';
+	END IF;
+END;//
+DELIMITER ;
+
+
+DROP TRIGGER IF EXISTS bef_upd_reporteEntrega_check;
+DELIMITER //
+CREATE TRIGGER bef_upd_reporteEntrega_check 
+BEFORE UPDATE ON reporteEntrega
+FOR EACH ROW
+BEGIN
+	SET @estadoReserva = (SELECT re.estado FROM reserva re WHERE re.idReserva = NEW.idReserva);
+	SET @empleadoEntrega = (SELECT car.nombre FROM empleado em, cargo car WHERE em.idCargo = car.idCargo AND em.idEmpleado = NEW.idEmpleado); 
+    IF @empleadoEntrega != 'recepcionista' THEN
+		SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Solo empleado Recepcionista puede hacer reporte de entrega';
+	END IF;
+	IF @estadoReserva != 'completada' THEN
+		SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'No se ha completado la reserva';
+	END IF;
+END;//
+DELIMITER ;
 
