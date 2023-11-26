@@ -90,7 +90,7 @@ CREATE TABLE pago (
 
 CREATE TABLE reembolso (
   idPago int NOT NULL,
-  fechaReembolso int NOT NULL,
+  fechaReembolso date NOT NULL,
   valorReembolso double NOT NULL,
   motivo varchar(255) NOT NULL
 );
@@ -104,7 +104,8 @@ CREATE TABLE resena (
   idHuesped int NOT NULL,
   idPropiedad int NOT NULL,
   calificacion int NOT NULL,
-  comentario varchar(255)
+  comentario varchar(255),
+  CONSTRAINT UC_resena_propiedadHuesped UNIQUE(idHuesped, idPropiedad)
 );
 
 CREATE TABLE reporteEntrega (
