@@ -8,7 +8,7 @@ Se requiere cubrir las siguientes necesidades:
 
 ### Gestión de Empleados:
 - Registro detallado de empleados, incluyendo información como nombre, apellido, número de identificación, correo electrónico y número de teléfono.
-- Administración de diferentes roles para empleados, como administrador, personal de limpieza y mantenimiento.
+- Administración de diferentes roles para empleados, como gerente, personal de limpieza, mantenimiento recepcionista, etc.
 - Asignación y seguimiento de propiedades a las que están asignados los empleados.
 
 ### Gestión de Huéspedes:
@@ -17,12 +17,12 @@ Se requiere cubrir las siguientes necesidades:
 ### Gestión de Propiedades:	
 - Registro de nuevas propiedades con detalles como nombre, descripción, ubicación, número de habitaciones, número de baños, capacidad, etc.
 - Cada propiedad puede tener varias imágenes.
-- Cada propiedad puede tener varios servicios adicionales como Wifi, zona de trabajo, lavadora, secadora, camara de seguridad, etc.
+- Cada propiedad puede tener varios servicios adicionales como Wifi, zona de trabajo, lavadora, secadora, cámara de seguridad, etc.
 
 ### Gestión de Reservas:
 - Creación de nuevas reservas con información de fechas de inicio y finalización.
 - Seguimiento del estado de las reservas (confirmada, pendiente, cancelada, completada).
-- Cálculo automatico del precio total de la reserva basado en la duración de la estadía y el valor por noche.
+- Cálculo automático del precio total de la reserva basado en la duración de la estadía y el valor por noche.
   
 ### Gestión de Pagos:
 - Registro de pagos asociados a reservas.
@@ -31,7 +31,7 @@ Se requiere cubrir las siguientes necesidades:
 ### Gestión de Reseñas:
 - Posibilidad para los usuarios huéspedes de dejar comentarios y calificaciones en propiedades después de una estancia.
 
-### Gestion de reportes de entregas:
+### Gestión de reportes de entregas:
 - Permitir a los empleados registrar el estado de entrega de la propiedad reservada. 
 
 ## Restricciones
@@ -60,8 +60,8 @@ Se requiere cubrir las siguientes necesidades:
 - El estado de la reserva debe ser uno de los siguientes: "confirmada", "pendiente", "cancelada" o "completada".
 - Si una reserva es confirmada, significa que se registro un pago.
 - Una reserva en pendiente, no ha sido pagada.
-- Si una reserva es completada, significa que el cliente realizo el pago y acudio a la estadia.
-- Una reserva completada no podra ser reembolsada.
+- Si una reserva es completada, significa que el cliente realizo el pago y acudió a la estadia.
+- Una reserva completada no podrá ser reembolsada.
 - Una reserva cancelada, registrará reembolso, solo si ha sido pagada, es decir se encontraba en estado confirmada.
 
 ### Pagos:
@@ -70,15 +70,18 @@ Se requiere cubrir las siguientes necesidades:
 
 ### Reembolsos:
 - La fecha de reembolso debe ser igual o posterior a la fecha de pago asociada.
-- El valor del reembolso sera igual al valor del pago de la reserva cancelada.
+- El valor del reembolso se le descontara un 10% del valor pagado a la reserva que fue cancelada.
 
 ### Reseñas:
 - La calificación de la reseña debe estar en el rango de 1 a 5.
 - Un huésped solo puede hacer una reseña por propiedad.
 
+### Reporte Entrega:
+- Solo los empleados recepcionista podran hacer reporte de entrega de la propiedad reservada.
+
 
 ## Diseño 
-### Diagrama Entidad - Relacion
+### Diagrama Entidad - Relación
 ![](ReadmeAssets/diagrama-entidad-relacion.png)
 
 ### Diagrama Relacional
