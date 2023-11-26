@@ -1,6 +1,3 @@
-
--- VALIDAR valorxNoche sea positivo.
-
 DROP TRIGGER IF EXISTS bef_ins_check_valorxNoche;
 DELIMITER //
 CREATE TRIGGER bef_ins_check_valorxNoche 
@@ -96,7 +93,7 @@ DELIMITER ;
 
 DROP TRIGGER IF EXISTS bef_upd_reserva_check;
 DELIMITER //
-CREATE TRIGGER bef_ins_reserva_check
+CREATE TRIGGER bef_upd_reserva_check
 BEFORE UPDATE ON reserva
 FOR EACH ROW
 BEGIN
@@ -189,4 +186,3 @@ BEGIN
 	END IF;
 END;//
 DELIMITER ;
-
