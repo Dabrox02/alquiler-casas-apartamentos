@@ -86,3 +86,127 @@ Se requiere cubrir las siguientes necesidades:
 
 ### Diagrama Relacional
 ![](ReadmeAssets/diagrama-relacional-db.png)
+
+
+## Consultas Base de Datos
+
+### CRUD para Tabla Cargo
+- Obtener todos los registros:
+```sql
+  SELECT * FROM cargo;
+```
+
+- Obtener registro por id:
+```sql
+  SELECT * FROM cargo WHERE idCargo = 1;
+```
+
+- Insertar registro:
+```sql
+    INSERT INTO cargo (nombre, descripcion) VALUES ('Gerente', 'Responsable de la gestión general');
+```
+
+- Actualizar registro:
+```sql
+    UPDATE cargo SET nombre = 'Gerente Ejecutivo' WHERE idCargo = 1;
+```
+
+- Eliminar registro:
+```sql
+    DELETE FROM cargo WHERE idCargo = 1;
+```
+
+### Consultas para Tabla Cargo
+
+1. Encontrar el cargo con mas empleados.
+
+```sql
+DROP PROCEDURE IF EXISTS proc_get_cargo_mas_empleados;
+DELIMITER //
+CREATE PROCEDURE proc_get_cargo_mas_empleados()
+BEGIN
+    CREATE TEMPORARY TABLE IF NOT EXISTS temp_resultados (
+        Cargo VARCHAR(40)
+    );
+    INSERT INTO temp_resultados (Cargo)
+    SELECT nombre AS Cargo
+    FROM cargo
+    WHERE idCargo = (
+        SELECT idCargo
+        FROM empleado
+        GROUP BY idCargo
+        ORDER BY COUNT(idEmpleado) DESC
+        LIMIT 1
+    );
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_get_cargo_mas_empleados();
+```
+
+2. Obtener cargo y nombre completo de los empleados que trabajan en una alguna propiedad ubicada en la ciudad solicitada.
+
+```sql
+DROP PROCEDURE IF EXISTS proc_get_nombre_cargo_empleado_ciudad;
+DELIMITER //
+CREATE PROCEDURE proc_get_nombre_cargo_empleado_ciudad(IN ciudad_solicitada VARCHAR(100))
+BEGIN
+    CREATE TEMPORARY TABLE IF NOT EXISTS temp_resultados (
+        NombreCompleto VARCHAR(255),
+        cargo VARCHAR(40)
+    );
+    INSERT INTO temp_resultados (NombreCompleto, cargo)
+    SELECT DISTINCT CONCAT(em.nombres, ' ', em.apellidos) as NombreCompleto, c.nombre
+    FROM cargo c, empleado em, trabajaEn tra
+    WHERE c.idCargo = em.idCargo
+    AND tra.idEmpleado = em.idEmpleado
+    AND tra.idPropiedad IN (SELECT idPropiedad FROM ubicacionPropiedad WHERE LOWER(ciudad) = LOWER(ciudad_solicitada));
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_get_nombre_cargo_empleado_ciudad('medellin');
+```
+
+3. Obtener nombre completo y cargo de los empleados trabajan en propiedades con un servicio solicitado.
+
+```sql
+DROP PROCEDURE IF EXISTS proc_get_nombre_cargo_propiedadServicio;
+DELIMITER //
+CREATE PROCEDURE proc_get_nombre_cargo_propiedadServicio(IN nombreServicio VARCHAR(50))
+BEGIN
+    CREATE TEMPORARY TABLE IF NOT EXISTS temp_resultados (
+        NombreCompleto VARCHAR(255),
+        cargo VARCHAR(40)
+    );
+    INSERT INTO temp_resultados (NombreCompleto, cargo)
+	SELECT DISTINCT CONCAT(em.nombres, ' ', em.apellidos) as NombreCompleto, c.nombre
+	FROM cargo c 
+	JOIN empleado em ON c.idCargo = em.idCargo
+	JOIN trabajaEn tra ON tra.idEmpleado = em.idEmpleado
+	WHERE tra.idPropiedad IN (
+		SELECT serp.idPropiedad FROM servicioPropiedad serp
+		WHERE serp.idServicio IN (SELECT sera.idServicio FROM servicioAdicional  sera WHERE LOWER(sera.nombreServicio) = LOWER(nombreServicio))
+	);
+    
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+		SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_get_nombre_cargo_propiedadServicio('gimnasio');
+```
+
