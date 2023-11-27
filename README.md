@@ -210,3 +210,36 @@ DELIMITER ;
 CALL proc_get_nombre_cargo_propiedadServicio('gimnasio');
 ```
 
+4. Obtener nombre, telefono y cargo de los empleados que han hecho un reporte de Entrega a una propiedad reservada en el mes de noviembre de cualquier año en la ciudad ingresada.
+
+```sql
+DROP PROCEDURE IF EXISTS proc_get_nombre_cargo_propiedadServicio;
+DELIMITER //
+CREATE PROCEDURE proc_get_nombre_cargo_propiedadServicio(IN nombreServicio VARCHAR(50))
+BEGIN
+    CREATE TEMPORARY TABLE IF NOT EXISTS temp_resultados (
+        NombreCompleto VARCHAR(255),
+        telefono VARCHAR(20),
+        cargo VARCHAR(40)
+    );
+    INSERT INTO temp_resultados (NombreCompleto, telefono, cargo)
+	SELECT DISTINCT CONCAT(em.nombres, ' ', em.apellidos) as NombreCompleto, em.telefono, c.nombre
+	FROM cargo c 
+	JOIN empleado em ON c.idCargo = em.idCargo
+	JOIN reporteEntrega rep ON em.idEmpleado = rep.idEmpleado
+	JOIN reserva re ON re.idReserva = rep.idReserva
+	JOIN ubicacionPropiedad ub ON ub.idPropiedad = re.idPropiedad
+	WHERE re.idReserva IN (
+		SELECT r.idReserva FROM reserva r WHERE DATE_FORMAT(r.fechaReserva, "%m") = 11)
+	AND LOWER(ub.ciudad) = LOWER(nombreServicio);
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+		SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_get_nombre_cargo_propiedadServicio('bucaramanga');
+```
