@@ -151,27 +151,48 @@ INSERT INTO huesped (dni,nombres,apellidos,telefono,email) VALUES
   (72864861,'Deacon','Workman','668-3713','donec.est@aol.net'),
   (84449904,'Fletcher','Yang','672-5333','facilisis.eget.ipsum@aol.org');
 
-INSERT INTO resena (idHuesped, idPropiedad, calificacion, comentario) VALUES
-(1, 5, 5, 'Una estancia increible, la vista al mar es impresionante.'),
-(2, 10, 4, 'El apartamento centrico es comodo y bien ubicado.'),
-(3, 15, 4, 'La habitacion en el corazon de la ciudad es acogedora.'),
-(4, 1, 5, 'El chalet con piscina es perfecto para vacaciones en familia.'),
-(5, 6, 3, 'El apartamento moderno con terraza tiene buenas vistas.'),
-(6, 11, 4, 'La casa de campo es ideal para desconectar de la ciudad.'),
-(7, 16, 4, 'La habitacion con baño privado es amplia y confortable.'),
-(8, 2, 5, 'El apartamento con vistas panoramicas ofrece una experiencia unica.'),
-(9, 8, 5, 'La casa antigua restaurada tiene un encanto especial.'),
-(10, 13, 4, 'El departamento ejecutivo en zona empresarial es muy conveniente.'),
-(11, 18, 5, 'La cabaña en la montaña es perfecta para relajarse junto a la chimenea.'),
-(12, 3, 4, 'El apartamento moderno con piscina comunitaria es genial.'),
-(13, 14, 3, 'La habitacion minimalista es sencilla pero comoda.'),
-(14, 12, 5, 'La casa colonial con patio interior es una joya arquitectonica.'),
-(15, 7, 4, 'El piso luminoso cerca de atracciones turisticas es conveniente.'),
-(16, 20, 5, 'La casa de playa con acceso directo al mar es un paraiso.'),
-(17, 17, 4, 'El loft en el centro historico tiene un ambiente encantador.'),
-(18, 19, 3, 'La habitacion tematica es interesante para amantes del arte.'),
-(19, 4, 4, 'El apartamento familiar con parque infantil es perfecto para niños.'),
-(20, 9, 5, 'La villa de lujo con servicio de conserje es simplemente impresionante.');
+INSERT INTO resena (idHuesped, idPropiedad, calificacion, comentario)
+VALUES
+  (5, 1, 4, 'Buena experiencia, lugar acogedor'),
+  (14, 1, 5, 'Increible, definitivamente regresare'),
+  (3, 2, 3, 'Buena ubicacion pero podria mejorar en algunos aspectos'),
+  (8, 3, 4, 'Personal amable y servicial'),
+  (12, 4, 5, 'Vistas impresionantes desde la terraza'),
+  (17, 5, 2, 'No cumplio con las expectativas, servicios insatisfactorios'),
+  (2, 6, 4, 'Perfecto para viajes de negocios'),
+  (20, 7, 5, 'Servicio de habitaciones rapido y eficiente'),
+  (11, 8, 3, 'Desayuno podria ser mejor'),
+  (7, 9, 4, 'Ambiente tranquilo y relajado'),
+  (6, 10, 5, 'Aceptan mascotas, ¡fantastico!'),
+  (9, 11, 3, 'Buena relacion calidad-precio'),
+  (16, 12, 4, 'Muy limpio y bien mantenido'),
+  (4, 13, 5, 'Personal atento y servicial'),
+  (19, 14, 2, 'Problemas con la conexion Wi-Fi'),
+  (1, 15, 4, 'Buenas instalaciones para eventos'),
+  (10, 16, 5, 'Sauna disponible, una gran ventaja'),
+  (18, 17, 3, 'Inconvenientes con el estacionamiento'),
+  (15, 18, 4, 'Recepcion 24/7, muy util'),
+  (13, 19, 5, 'Muy recomendado, volvere pronto'),
+  (9, 2, 4, 'Buena ubicacion y servicio'),
+  (18, 3, 5, 'Increible experiencia, vistas impresionantes'),
+  (7, 4, 3, 'Podria mejorar en la limpieza'),
+  (15, 5, 4, 'Personal atento y amable'),
+  (5, 6, 5, 'Excelente para estancias cortas'),
+  (11, 7, 2, 'No cumplio con las expectativas'),
+  (20, 8, 4, 'Servicio de habitaciones eficiente'),
+  (14, 9, 5, 'Desayuno variado y delicioso'),
+  (8, 10, 3, 'Ambiente tranquilo pero instalaciones antiguas'),
+  (1, 11, 4, 'Aceptan mascotas, un gran plus'),
+  (12, 12, 5, 'Buena relacion calidad-precio'),
+  (13, 13, 3, 'Necesita mejoras en la atencion al cliente'),
+  (6, 14, 4, 'Limpieza impecable y personal amigable'),
+  (16, 15, 5, 'Vistas panoramicas desde la terraza'),
+  (3, 16, 2, 'Problemas con la conexion Wi-Fi'),
+  (10, 17, 4, 'Instalaciones para eventos bien equipadas'),
+  (17, 18, 5, 'Sauna y spa de calidad'),
+  (19, 19, 3, 'Estacionamiento dificil de encontrar'),
+  (4, 20, 4, 'Atencion 24/7, muy util'),
+  (2, 1, 5, 'Una estancia inolvidable');
 
 INSERT INTO trabajaEn (idPropiedad, idEmpleado) VALUES
 (1, 5),
@@ -253,7 +274,6 @@ INSERT INTO pago (idReserva, fechaPago, valorPago, medioPago) VALUES
 (18, '2023-12-12', 280000, 'tarjeta'),
 (20, '2023-12-14', 290000, 'tarjeta');
 
-
 INSERT INTO servicioPropiedad (idPropiedad, idServicio)
 VALUES
   (1, 5),
@@ -280,50 +300,6 @@ VALUES
   (14, 8),
   (15, 1),
   (15, 7);
-
-
-INSERT INTO resena (idHuesped, idPropiedad, calificacion, comentario)
-VALUES
-  (5, 1, 4, 'Buena experiencia, lugar acogedor'),
-  (14, 1, 5, 'Increible, definitivamente regresare'),
-  (3, 2, 3, 'Buena ubicacion pero podria mejorar en algunos aspectos'),
-  (8, 3, 4, 'Personal amable y servicial'),
-  (12, 4, 5, 'Vistas impresionantes desde la terraza'),
-  (17, 5, 2, 'No cumplio con las expectativas, servicios insatisfactorios'),
-  (2, 6, 4, 'Perfecto para viajes de negocios'),
-  (20, 7, 5, 'Servicio de habitaciones rapido y eficiente'),
-  (11, 8, 3, 'Desayuno podria ser mejor'),
-  (7, 9, 4, 'Ambiente tranquilo y relajado'),
-  (6, 10, 5, 'Aceptan mascotas, ¡fantastico!'),
-  (9, 11, 3, 'Buena relacion calidad-precio'),
-  (16, 12, 4, 'Muy limpio y bien mantenido'),
-  (4, 13, 5, 'Personal atento y servicial'),
-  (19, 14, 2, 'Problemas con la conexion Wi-Fi'),
-  (1, 15, 4, 'Buenas instalaciones para eventos'),
-  (10, 16, 5, 'Sauna disponible, una gran ventaja'),
-  (18, 17, 3, 'Inconvenientes con el estacionamiento'),
-  (15, 18, 4, 'Recepcion 24/7, muy util'),
-  (13, 19, 5, 'Muy recomendado, volvere pronto'),
-  (9, 2, 4, 'Buena ubicacion y servicio'),
-  (18, 3, 5, 'Increible experiencia, vistas impresionantes'),
-  (7, 4, 3, 'Podria mejorar en la limpieza'),
-  (15, 5, 4, 'Personal atento y amable'),
-  (5, 6, 5, 'Excelente para estancias cortas'),
-  (11, 7, 2, 'No cumplio con las expectativas'),
-  (20, 8, 4, 'Servicio de habitaciones eficiente'),
-  (14, 9, 5, 'Desayuno variado y delicioso'),
-  (8, 10, 3, 'Ambiente tranquilo pero instalaciones antiguas'),
-  (1, 11, 4, 'Aceptan mascotas, un gran plus'),
-  (12, 12, 5, 'Buena relacion calidad-precio'),
-  (13, 13, 3, 'Necesita mejoras en la atencion al cliente'),
-  (6, 14, 4, 'Limpieza impecable y personal amigable'),
-  (16, 15, 5, 'Vistas panoramicas desde la terraza'),
-  (3, 16, 2, 'Problemas con la conexion Wi-Fi'),
-  (10, 17, 4, 'Instalaciones para eventos bien equipadas'),
-  (17, 18, 5, 'Sauna y spa de calidad'),
-  (19, 19, 3, 'Estacionamiento dificil de encontrar'),
-  (4, 20, 4, 'Atencion 24/7, muy util'),
-  (2, 1, 5, 'Una estancia inolvidable');
 
 
 INSERT INTO reporteEntrega (idEmpleado, idReserva, fechaReporte, detalle)
