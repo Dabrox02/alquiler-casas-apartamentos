@@ -121,9 +121,9 @@ Se requiere cubrir las siguientes necesidades:
 1. Encontrar el cargo con mas empleados.
 
 ```sql
-DROP PROCEDURE IF EXISTS proc_get_cargo_mas_empleados;
+DROP PROCEDURE IF EXISTS proc_obt_cargo_mas_empleados;
 DELIMITER //
-CREATE PROCEDURE proc_get_cargo_mas_empleados()
+CREATE PROCEDURE proc_obt_cargo_mas_empleados()
 BEGIN
     CREATE TEMPORARY TABLE IF NOT EXISTS temp_resultados (
         Cargo VARCHAR(40)
@@ -146,15 +146,15 @@ BEGIN
     DROP TEMPORARY TABLE IF EXISTS temp_resultados;
 END //
 DELIMITER ;
-CALL proc_get_cargo_mas_empleados();
+CALL proc_obt_cargo_mas_empleados();
 ```
 
 2. Obtener cargo y nombre completo de los empleados que trabajan en una alguna propiedad ubicada en la ciudad solicitada.
 
 ```sql
-DROP PROCEDURE IF EXISTS proc_get_nombre_cargo_empleado_ciudad;
+DROP PROCEDURE IF EXISTS proc_obt_nombre_cargo_empleado_ciudad;
 DELIMITER //
-CREATE PROCEDURE proc_get_nombre_cargo_empleado_ciudad(IN ciudad_solicitada VARCHAR(100))
+CREATE PROCEDURE proc_obt_nombre_cargo_empleado_ciudad(IN ciudad_solicitada VARCHAR(100))
 BEGIN
     CREATE TEMPORARY TABLE IF NOT EXISTS temp_resultados (
         NombreCompleto VARCHAR(255),
@@ -175,15 +175,15 @@ BEGIN
     DROP TEMPORARY TABLE IF EXISTS temp_resultados;
 END //
 DELIMITER ;
-CALL proc_get_nombre_cargo_empleado_ciudad('medellin');
+CALL proc_obt_nombre_cargo_empleado_ciudad('medellin');
 ```
 
 3. Obtener nombre completo y cargo de los empleados trabajan en propiedades con un servicio solicitado.
 
 ```sql
-DROP PROCEDURE IF EXISTS proc_get_nombre_cargo_propiedadServicio;
+DROP PROCEDURE IF EXISTS proc_obt_nombre_cargo_propiedadServicio;
 DELIMITER //
-CREATE PROCEDURE proc_get_nombre_cargo_propiedadServicio(IN nombreServicio VARCHAR(50))
+CREATE PROCEDURE proc_obt_nombre_cargo_propiedadServicio(IN nombreServicio VARCHAR(50))
 BEGIN
     CREATE TEMPORARY TABLE IF NOT EXISTS temp_resultados (
         NombreCompleto VARCHAR(255),
@@ -207,15 +207,15 @@ BEGIN
     DROP TEMPORARY TABLE IF EXISTS temp_resultados;
 END //
 DELIMITER ;
-CALL proc_get_nombre_cargo_propiedadServicio('gimnasio');
+CALL proc_obt_nombre_cargo_propiedadServicio('gimnasio');
 ```
 
 4. Obtener nombre, telefono y cargo de los empleados que han hecho un reporte de Entrega a una propiedad reservada en el mes de noviembre de cualquier año en la ciudad ingresada.
 
 ```sql
-DROP PROCEDURE IF EXISTS proc_get_nombre_cargo_propiedadServicio;
+DROP PROCEDURE IF EXISTS proc_obt_nombre_cargo_propiedadServicio;
 DELIMITER //
-CREATE PROCEDURE proc_get_nombre_cargo_propiedadServicio(IN nombreCiudad VARCHAR(50))
+CREATE PROCEDURE proc_obt_nombre_cargo_propiedadServicio(IN nombreCiudad VARCHAR(50))
 BEGIN
     CREATE TEMPORARY TABLE IF NOT EXISTS temp_resultados (
         NombreCompleto VARCHAR(255),
@@ -241,15 +241,15 @@ BEGIN
     DROP TEMPORARY TABLE IF EXISTS temp_resultados;
 END //
 DELIMITER ;
-CALL proc_get_nombre_cargo_propiedadServicio('bucaramanga');
+CALL proc_obt_nombre_cargo_propiedadServicio('bucaramanga');
 ```
 
 5. Obtener el nombre cargo y propiedad en las que trabajen los empleados cuya descripcion de la propiedad que contenga la palabra ingresada.
 
 ```sql
-DROP PROCEDURE IF EXISTS proc_get_nombre_cargo_propiedad_byDescripcion;
+DROP PROCEDURE IF EXISTS proc_obt_nombre_cargo_propiedad_xDescripcion;
 DELIMITER //
-CREATE PROCEDURE proc_get_nombre_cargo_propiedad_byDescripcion(IN buscado VARCHAR(50))
+CREATE PROCEDURE proc_obt_nombre_cargo_propiedad_xDescripcion(IN buscado VARCHAR(50))
 BEGIN
     SET @terminoBuscado = buscado;
 
@@ -277,7 +277,7 @@ BEGIN
     DROP TEMPORARY TABLE IF EXISTS temp_resultados;
 END //
 DELIMITER ;
-CALL proc_get_nombre_cargo_propiedad_byDescripcion('moderno');
+CALL proc_obt_nombre_cargo_propiedad_xDescripcion('moderno');
 ```
 
 ## Consultas Base de Datos
@@ -310,3 +310,209 @@ CALL proc_get_nombre_cargo_propiedad_byDescripcion('moderno');
 ```
 
 ### Consultas para Tabla Empleado
+1. Obtener empleados que trabajen en propiedades que tengan al menos una imagen, permita mascotas y el numero de baños sea mayor o igual al ingresado.
+   
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_empleados_x_mascotas_banos;
+DELIMITER //
+CREATE PROCEDURE proc_obt_empleados_x_mascotas_banos(IN numBanosMinimo INT)
+BEGIN
+    CREATE TEMPORARY TABLE IF NOT EXISTS temp_resultados (
+		idEmpleado int(11),
+		dni varchar(15), 
+		nombres varchar(40),
+		apellidos varchar(40),
+		telefono varchar(20),
+		email varchar(60),
+		idCargo int(11)
+    );  
+    INSERT INTO temp_resultados
+	SELECT DISTINCT em.* FROM empleado em
+	JOIN trabajaEn tra ON em.idEmpleado = tra.idEmpleado
+	WHERE tra.idPropiedad IN (
+		SELECT DISTINCT det.idPropiedad 
+		FROM detallePropiedad det 
+		WHERE LOWER(det.mascotas) = 'si' AND det.numBanos >= numBanosMinimo)
+	AND tra.idPropiedad IN (
+		SELECT DISTINCT img.idPropiedad 
+		FROM imgpropiedad img);
+        
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+		SELECT * FROM temp_resultados;
+    END IF;
+
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_empleados_x_mascotas_banos(4);
+```
+
+2. Obtener el nombre de los empleados que realizaron un reporte de entrega, el id de de todas las reservas a las que realizaron el reporte separadas por '-' y el numero de reportes totales realizados por cada uno de ellos que debe ser mayor o igual al ingresado.
+
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_empleados_y_reportes_x_numTotalReporte;
+DELIMITER //
+CREATE PROCEDURE proc_obt_empleados_y_reportes_x_numTotalReporte(IN numReportesMinimo INT)
+BEGIN
+    CREATE TEMPORARY TABLE IF NOT EXISTS temp_resultados (
+		nombreCompleto VARCHAR(255),
+        reportesId VARCHAR(255),
+        numTotalReportes INTEGER
+    );  
+	
+    INSERT INTO temp_resultados(nombreCompleto, reportesId, numTotalReportes)
+	SELECT CONCAT(em.nombres, " ", em.apellidos), 
+	GROUP_CONCAT(re.idReporte SEPARATOR ' - '), 
+	COUNT(re.idReporte) 
+	FROM empleado em, reporteEntrega re
+	WHERE em.idEmpleado = re.idEmpleado
+	AND em.idEmpleado IN (
+		SELECT em.idEmpleado
+		FROM empleado em, reporteEntrega re
+		WHERE em.idEmpleado = re.idEmpleado
+		GROUP BY em.nombres
+		HAVING count(re.idReporte) >= numReportesMinimo)
+	GROUP BY em.nombres;
+        
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+		SELECT * FROM temp_resultados;
+    END IF;
+
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_empleados_y_reportes_x_numTotalReporte(2);
+```
+
+3. Obtener todos los empleados que trabajen en una propiedad cuyo huesped haya realizado alguna cancelacion de reserva y cuyo nombre del huesped comience por la letra ingresada.
+
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_empleados_con_pago_x_letra;
+DELIMITER //
+CREATE PROCEDURE proc_obt_empleados_con_pago_x_letra(IN letraIngresada CHAR(1))
+BEGIN
+    SET @letraBuscada = letraIngresada;
+
+    CREATE TEMPORARY TABLE IF NOT EXISTS temp_resultados (
+        idEmpleado INT,
+        dni VARCHAR(15),
+        nombres VARCHAR(40),
+        apellidos VARCHAR(40),
+        telefono VARCHAR(20),
+        email VARCHAR(60),
+        idCargo INT
+    );
+
+    PREPARE stmt FROM 
+    'INSERT INTO temp_resultados(idEmpleado, dni, nombres, apellidos, telefono, email, idCargo)
+    SELECT em.idEmpleado, em.dni, em.nombres, em.apellidos, em.telefono, em.email, em.idCargo
+    FROM empleado em, trabajaen tra, propiedad pro, reserva re, huesped hu
+    WHERE em.idEmpleado = tra.idEmpleado
+    AND tra.idPropiedad = pro.idPropiedad
+    AND re.idPropiedad = pro.idPropiedad
+    AND re.idHuesped = hu.idHuesped
+    AND re.idPropiedad IN (
+        SELECT res.idPropiedad 
+        FROM reserva res
+        WHERE LOWER(res.estado) = "cancelado"
+    )
+    AND hu.idHuesped IN (
+        SELECT hue.idHuesped 
+        FROM huesped hue
+        WHERE LOWER(LEFT(hue.nombres, 1)) = LOWER(LEFT(@letraBuscada, 1))
+    )';
+    EXECUTE stmt;
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_empleados_con_pago_x_letra('F');
+```
+
+4. Obtener todos los empleados que trabajen en una propiedad que haya sido reseñada mas de 1 vez y tenga almenos una reservacion completada.
+
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_empleados_con_reservaCompleta_totalResenas;
+DELIMITER //
+CREATE PROCEDURE proc_obt_empleados_con_reservaCompleta_totalResenas()
+BEGIN
+    CREATE TEMPORARY TABLE IF NOT EXISTS temp_resultados (
+        idEmpleado INT,
+        dni VARCHAR(15),
+        nombres VARCHAR(40),
+        apellidos VARCHAR(40),
+        telefono VARCHAR(20),
+        email VARCHAR(60),
+        idCargo INT
+    );
+
+    PREPARE stmt FROM 
+    'INSERT INTO temp_resultados(idEmpleado, dni, nombres, apellidos, telefono, email, idCargo)
+	SELECT DISTINCT em.* FROM empleado em, trabajaEn tra
+	WHERE em.idEmpleado = tra.idEmpleado
+	AND tra.idPropiedad IN (
+		SELECT DISTINCT re.idPropiedad FROM reserva re
+		WHERE re.estado = "completada")
+	AND tra.idPropiedad IN (
+		SELECT res.idPropiedad FROM resena res
+		GROUP BY res.idPropiedad
+		HAVING COUNT(res.idPropiedad) > 1)';
+    EXECUTE stmt;
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_empleados_con_reservaCompleta_totalResenas();
+```
+
+5. Obtener el nombre y cargo de los empleados que trabajan en propiedades cuyo valor por noche supera el promedio y poseen mas de 2 servicios adicionales.
+
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_empleados_x_masServicio_masValor;
+DELIMITER //
+CREATE PROCEDURE proc_obt_empleados_x_masServicio_masValor()
+BEGIN
+    CREATE TEMPORARY TABLE IF NOT EXISTS temp_resultados (
+        nombreCompleto VARCHAR(40),
+        cargo VARCHAR(40)
+    );
+
+	INSERT INTO temp_resultados(nombreCompleto, cargo)
+	SELECT CONCAT(em.nombres, " ", em.apellidos), c.nombre FROM empleado em, cargo c, trabajaen tra, propiedad pro
+	WHERE em.idCargo = c.idCargo
+	AND tra.idEmpleado = em.idEmpleado
+	AND tra.idPropiedad = pro.idPropiedad
+	AND tra.idPropiedad IN (
+		SELECT sp.idPropiedad 
+		FROM servicioPropiedad sp 
+		GROUP BY sp.idPropiedad 
+		HAVING count(sp.idServicio) > 2)
+	AND pro.valorxNoche > (
+		SELECT AVG(pro.valorxNoche) 
+		FROM propiedad pro);
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_empleados_x_masServicio_masValor();
+```
