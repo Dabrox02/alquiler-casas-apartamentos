@@ -6,14 +6,16 @@ CREATE PROCEDURE proc_trans_generarPago(
     IN medio_pago VARCHAR(10)
 )
 BEGIN
+    DECLARE msg_error VARCHAR(255);
     DECLARE estado_actual_reserva VARCHAR(20);    
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
     BEGIN
         ROLLBACK;
         SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Error en la operación. Se ha realizado un rollback.';
+        SET MESSAGE_TEXT = msg_error;
     END;
-    
+
+    SET msg_error = 'Error en la operación. Se ha realizado un rollback.';
 	SELECT estado INTO estado_actual_reserva FROM reserva WHERE idReserva = id_reserva_pago;
     
 	IF estado_actual_reserva = 'pendiente' THEN
@@ -22,8 +24,8 @@ BEGIN
         INSERT INTO pago (idReserva, fechaPago, medioPago) VALUES (id_reserva_pago, fecha_pago, medio_pago);
         COMMIT;
     ELSE
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'La reserva no está en estado pendiente. No se realizaron operaciones.';
+        SIGNAL SQLSTATE '45000';
+        SET msg_error = 'La reserva no está en estado pendiente. No se realizaron operaciones.';
     END IF;
     
 END //
