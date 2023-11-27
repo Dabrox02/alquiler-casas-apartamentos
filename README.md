@@ -215,7 +215,7 @@ CALL proc_get_nombre_cargo_propiedadServicio('gimnasio');
 ```sql
 DROP PROCEDURE IF EXISTS proc_get_nombre_cargo_propiedadServicio;
 DELIMITER //
-CREATE PROCEDURE proc_get_nombre_cargo_propiedadServicio(IN nombreServicio VARCHAR(50))
+CREATE PROCEDURE proc_get_nombre_cargo_propiedadServicio(IN nombreCiudad VARCHAR(50))
 BEGIN
     CREATE TEMPORARY TABLE IF NOT EXISTS temp_resultados (
         NombreCompleto VARCHAR(255),
@@ -231,7 +231,7 @@ BEGIN
 	JOIN ubicacionPropiedad ub ON ub.idPropiedad = re.idPropiedad
 	WHERE re.idReserva IN (
 		SELECT r.idReserva FROM reserva r WHERE DATE_FORMAT(r.fechaReserva, "%m") = 11)
-	AND LOWER(ub.ciudad) = LOWER(nombreServicio);
+	AND LOWER(ub.ciudad) = LOWER(nombreCiudad);
 
     IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
         SELECT 'No hay resultados coincidentes' AS Mensaje;
@@ -243,3 +243,70 @@ END //
 DELIMITER ;
 CALL proc_get_nombre_cargo_propiedadServicio('bucaramanga');
 ```
+
+5. Obtener el nombre cargo y propiedad en las que trabajen los empleados cuya descripcion de la propiedad que contenga la palabra ingresada.
+
+```sql
+DROP PROCEDURE IF EXISTS proc_get_nombre_cargo_propiedad_byDescripcion;
+DELIMITER //
+CREATE PROCEDURE proc_get_nombre_cargo_propiedad_byDescripcion(IN buscado VARCHAR(50))
+BEGIN
+    SET @terminoBuscado = buscado;
+
+    CREATE TEMPORARY TABLE IF NOT EXISTS temp_resultados (
+        NombreCompleto VARCHAR(255),
+        cargo VARCHAR(40),
+        descripcion TEXT
+    );  
+
+    PREPARE stmt FROM 
+    'INSERT INTO temp_resultados (NombreCompleto, cargo, descripcion)
+    SELECT CONCAT(em.nombres, " ", em.apellidos), c.nombre, pro.descripcion FROM cargo c, empleado em, trabajaEn tra, propiedad pro
+    WHERE c.idCargo = em.idCargo
+    AND em.idEmpleado = tra.idEmpleado
+    AND pro.idPropiedad = tra.idPropiedad
+    AND pro.descripcion LIKE CONCAT("%", ?, "%")';
+    EXECUTE stmt USING @terminoBuscado;
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+		SELECT * FROM temp_resultados;
+    END IF;
+
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_get_nombre_cargo_propiedad_byDescripcion('moderno');
+```
+
+## Consultas Base de Datos
+
+### CRUD para Tabla Empleado
+- Obtener todos los registros:
+```sql
+  SELECT * FROM empleado;
+```
+
+- Obtener registro por id:
+```sql
+  SELECT * FROM empleado WHERE idEmpleado = 1;
+```
+
+- Insertar registro:
+```sql
+    INSERT INTO empleado (dni,nombres,apellidos,telefono,email,idCargo) VALUES
+  (25379094,'Isaac','Holland','894-9021','nisi.magna.sed@hotmail.couk',2);
+```
+
+- Actualizar registro:
+```sql
+    UPDATE empleado SET nombres = 'Isaac Norman' WHERE idEmpleado = 1;
+```
+
+- Eliminar registro:
+```sql
+    DELETE FROM empleado WHERE idEmpleado = 1;
+```
+
+### Consultas para Tabla Empleado
