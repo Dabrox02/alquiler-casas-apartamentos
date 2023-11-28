@@ -1,68 +1,68 @@
-## Descripción del negocio
+## Descripcion del negocio
 
-"Viajemos Juntos" tiene como misión ofrecer experiencias de alojamiento inolvidables, brindando un servicio integral y de calidad en el alquiler de apartamentos, casas y habitaciones en toda Colombia. 
+"Viajemos Juntos" tiene como mision ofrecer experiencias de alojamiento inolvidables, brindando un servicio integral y de calidad en el alquiler de apartamentos, casas y habitaciones en toda Colombia. 
 
-Se requiere la implementación de una base de datos que tiene como objetivo centralizar y optimizar la gestión de los alquileres de propiedades. Esta herramienta permitirá administrar eficientemente la información relacionada con empleados, propiedades, reservas, pagos, reseñas y estados de entrega. Además, facilitará la toma de decisiones estratégicas y mejorará la experiencia tanto para los huéspedes como para los empleados.
+Se requiere la implementacion de una base de datos que tiene como objetivo centralizar y optimizar la gestion de los alquileres de propiedades. Esta herramienta permitira administrar eficientemente la informacion relacionada con empleados, propiedades, reservas, pagos, reseñas y estados de entrega. Ademas, facilitara la toma de decisiones estrategicas y mejorara la experiencia tanto para los huespedes como para los empleados.
 
 Se requiere cubrir las siguientes necesidades:
 
-### Gestión de Empleados:
-- Registro detallado de empleados, incluyendo información como nombre, apellido, número de identificación, correo electrónico y número de teléfono.
-- Administración de diferentes roles para empleados, como gerente, personal de limpieza, mantenimiento recepcionista, etc.
-- Asignación y seguimiento de propiedades a las que están asignados los empleados.
+### Gestion de Empleados:
+- Registro detallado de empleados, incluyendo informacion como nombre, apellido, numero de identificacion, correo electronico y numero de telefono.
+- Administracion de diferentes roles para empleados, como gerente, personal de limpieza, mantenimiento recepcionista, etc.
+- Asignacion y seguimiento de propiedades a las que estan asignados los empleados.
 
-### Gestión de Huéspedes:
-- Registro de huéspedes con información relacionada como nombre, apellido, numero de identificación, correo electrónico y número de teléfono.
+### Gestion de Huespedes:
+- Registro de huespedes con informacion relacionada como nombre, apellido, numero de identificacion, correo electronico y numero de telefono.
 
-### Gestión de Propiedades:	
-- Registro de nuevas propiedades con detalles como nombre, descripción, ubicación, número de habitaciones, número de baños, capacidad, etc.
-- Cada propiedad puede tener varias imágenes.
-- Cada propiedad puede tener varios servicios adicionales como Wifi, zona de trabajo, lavadora, secadora, cámara de seguridad, etc.
+### Gestion de Propiedades:	
+- Registro de nuevas propiedades con detalles como nombre, descripcion, ubicacion, numero de habitaciones, numero de baños, capacidad, etc.
+- Cada propiedad puede tener varias imagenes.
+- Cada propiedad puede tener varios servicios adicionales como Wifi, zona de trabajo, lavadora, secadora, camara de seguridad, etc.
 
-### Gestión de Reservas:
-- Creación de nuevas reservas con información de fechas de inicio y finalización.
+### Gestion de Reservas:
+- Creacion de nuevas reservas con informacion de fechas de inicio y finalizacion.
 - Seguimiento del estado de las reservas (confirmada, pendiente, cancelada, completada).
-- Cálculo automático del precio total de la reserva basado en la duración de la estadía y el valor por noche.
+- Calculo automatico del precio total de la reserva basado en la duracion de la estadia y el valor por noche.
   
-### Gestión de Pagos:
+### Gestion de Pagos:
 - Registro de pagos asociados a reservas.
 - Cada reserva puede ser cancelada, si se registro un pago de la reserva cancelada, este pago sera reembolsado.
 
-### Gestión de Reseñas:
-- Posibilidad para los usuarios huéspedes de dejar comentarios y calificaciones en propiedades después de una estancia.
+### Gestion de Reseñas:
+- Posibilidad para los usuarios huespedes de dejar comentarios y calificaciones en propiedades despues de una estancia.
 
-### Gestión de reportes de entregas:
+### Gestion de reportes de entregas:
 - Permitir a los empleados registrar el estado de entrega de la propiedad reservada. 
 
 ## Restricciones
 
 ### Empleados
-- El correo electrónico y telefono de cada empleado debe ser único.
+- El correo electronico y telefono de cada empleado debe ser unico.
 - Cada empleado debe poseer un cargo
 
 ### Propiedades:
-- Si la propiedad es una habitación, el numero de habitaciones de está será 1.
-- El número de habitaciones, baños y la capacidad de la propiedad deben ser valores enteros no negativos.
+- Si la propiedad es una habitacion, el numero de habitaciones de esta sera 1.
+- El numero de habitaciones, baños y la capacidad de la propiedad deben ser valores enteros no negativos.
 - El valor por noche de la propiedad no puede ser negativo.
 
-### Huéspedes
-- Cada huésped debe tener un número de identificación único (dni).
-- El correo electrónico de cada huésped debe ser único.
+### Huespedes
+- Cada huesped debe tener un numero de identificacion unico (dni).
+- El correo electronico de cada huesped debe ser unico.
 
-### Imágenes de Propiedades
-- Las imágenes deben pertenecer a una propiedad existente.
+### Imagenes de Propiedades
+- Las imagenes deben pertenecer a una propiedad existente.
 
 ### Servicios Adicionales:
-- Cada servicio adicional debe tener un nombre único.
+- Cada servicio adicional debe tener un nombre unico.
 
 ### Reservas:
-- La fecha de inicio de la reserva debe ser anterior a la fecha de finalización.
+- La fecha de inicio de la reserva debe ser anterior a la fecha de finalizacion.
 - El estado de la reserva debe ser uno de los siguientes: "confirmada", "pendiente", "cancelada" o "completada".
 - Si una reserva es confirmada, significa que se registro un pago.
 - Una reserva en pendiente, no ha sido pagada.
-- Si una reserva es completada, significa que el cliente realizo el pago y acudió a la estadia.
-- Una reserva completada no podrá ser reembolsada.
-- Una reserva cancelada, registrará reembolso, solo si ha sido pagada, es decir se encontraba en estado confirmada.
+- Si una reserva es completada, significa que el cliente realizo el pago y acudio a la estadia.
+- Una reserva completada no podra ser reembolsada.
+- Una reserva cancelada, registrara reembolso, solo si ha sido pagada, es decir se encontraba en estado confirmada.
 
 ### Pagos:
 - La fecha de pago debe ser igual o posterior a la fecha de reserva.
@@ -73,15 +73,15 @@ Se requiere cubrir las siguientes necesidades:
 - El valor del reembolso se le descontara un 10% del valor pagado a la reserva que fue cancelada.
 
 ### Reseñas:
-- La calificación de la reseña debe estar en el rango de 1 a 5.
-- Un huésped solo puede hacer una reseña por propiedad.
+- La calificacion de la reseña debe estar en el rango de 1 a 5.
+- Un huesped solo puede hacer una reseña por propiedad.
 
 ### Reporte Entrega:
 - Solo los empleados recepcionista podran hacer reporte de entrega de la propiedad reservada.
 
 
 ## Diseño 
-### Diagrama Entidad - Relación
+### Diagrama Entidad - Relacion
 ![](ReadmeAssets/diagrama-entidad-relacion.png)
 
 ### Diagrama Relacional
@@ -103,7 +103,7 @@ Se requiere cubrir las siguientes necesidades:
 
 - Insertar registro:
 ```sql
-    INSERT INTO cargo (nombre, descripcion) VALUES ('Gerente', 'Responsable de la gestión general');
+    INSERT INTO cargo (nombre, descripcion) VALUES ('Gerente', 'Responsable de la gestion general');
 ```
 
 - Actualizar registro:
@@ -707,7 +707,7 @@ DELIMITER ;
 CALL proc_obt_agrupacion_EmpleadoServicios();
 ```
 
-5. Encontrar las 5 propiedades con el mayor número de reservas canceladas en el segundo semestre del año 2023 y mayor numero de empleados que trabajan en dichas propiedades.
+5. Encontrar las 5 propiedades con el mayor numero de reservas canceladas en el segundo semestre del año 2023 y mayor numero de empleados que trabajan en dichas propiedades.
 
 ```sql
 DROP PROCEDURE IF EXISTS proc_obt_propiedadesEmpleados_masCanceladas_masEmpleados;
@@ -1395,5 +1395,212 @@ BEGIN
 END //
 DELIMITER ;
 CALL proc_obt_serviciosAgrupados_por_mes_pendientes();
+```
+
+### CRUD para Tabla imgPropiedad
+- Obtener todos los registros:
+```sql
+  SELECT * FROM imgPropiedad;
+```
+
+- Obtener registro:
+```sql
+  SELECT * FROM imgPropiedad WHERE idPropiedad = 1;
+```
+
+- Insertar registro:
+```sql
+    INSERT INTO imgPropiedad (idImgPropiedad, idPropiedad, urlImagen, descripcion) VALUES
+    (1, 1, 'https://a0.muscache.com/im/pictures/a1399e86-4cba-44fe-9099-80e5a6717f87.jpg?im_w=720', 'Vista frontal casa');
+```
+
+- Actualizar registro:
+```sql
+    UPDATE imgPropiedad SET descripcion = "Jardin trasero" WHERE idImgPropiedad = 1;
+```
+
+- Eliminar registro:
+```sql
+    DELETE FROM imgPropiedad WHERE idImgPropiedad = 5;
+```
+
+### Consultas para Tabla servicioAdicional
+
+1. Listar las imagenes de propiedades que estan asociadas a propiedades con mas de 2 servicios adicionales.
+
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_imgPropiedad_masServicios;
+DELIMITER //
+CREATE PROCEDURE proc_obt_imgPropiedad_masServicios()
+BEGIN
+    CREATE TEMPORARY TABLE IF NOT EXISTS temp_resultados (
+	  idImgPropiedad INT PRIMARY KEY AUTO_INCREMENT,
+	  idPropiedad INT NOT NULL,
+	  urlImagen VARCHAR(255) NOT NULL,
+	  descripcion VARCHAR(255) NOT NULL
+    );
+    
+	INSERT INTO temp_resultados
+	SELECT ip.*
+	FROM imgPropiedad ip
+	JOIN propiedad p ON ip.idPropiedad = p.idPropiedad
+	JOIN (
+		SELECT idPropiedad
+		FROM servicioPropiedad
+		GROUP BY idPropiedad
+		HAVING COUNT(idServicio) > 2
+	) prop ON p.idPropiedad = prop.idPropiedad;
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_imgPropiedad_masServicios();
+```
+
+2. Obtener las imagenes de propiedades que estan asociadas a propiedades con la menor cantidad de reservas pendientes.
+
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_imgPropiedad_menosPendientes;
+DELIMITER //
+CREATE PROCEDURE proc_obt_imgPropiedad_menosPendientes()
+BEGIN
+    CREATE TEMPORARY TABLE IF NOT EXISTS temp_resultados (
+	  idImgPropiedad INT PRIMARY KEY AUTO_INCREMENT,
+	  idPropiedad INT NOT NULL,
+	  urlImagen VARCHAR(255) NOT NULL,
+	  descripcion VARCHAR(255) NOT NULL
+    );
+    
+	INSERT INTO temp_resultados
+	SELECT ip.*
+	FROM imgPropiedad ip
+	JOIN propiedad p ON ip.idPropiedad = p.idPropiedad
+	JOIN (
+		SELECT idPropiedad, COUNT(idReserva) AS totalReservas
+		FROM reserva
+		WHERE estado = 'pendiente'
+		GROUP BY idPropiedad
+		ORDER BY totalReservas ASC
+		LIMIT 1
+	) prop ON p.idPropiedad = prop.idPropiedad
+	ORDER BY prop.totalReservas ASC
+	LIMIT 1;
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_imgPropiedad_menosPendientes();
+```
+
+3. Listar las imagenes de propiedades que estan asociadas a propiedades con reservas canceladas en los ultimos 15 dias.
+
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_imgPropiedad_canceladasUltimosdias;
+DELIMITER //
+CREATE PROCEDURE proc_obt_imgPropiedad_canceladasUltimosdias(IN dias_atras INT)
+BEGIN
+    CREATE TEMPORARY TABLE IF NOT EXISTS temp_resultados (
+	  idImgPropiedad INT PRIMARY KEY AUTO_INCREMENT,
+	  idPropiedad INT NOT NULL,
+	  urlImagen VARCHAR(255) NOT NULL,
+	  descripcion VARCHAR(255) NOT NULL
+    );
+    
+	INSERT INTO temp_resultados
+	SELECT DISTINCT ip.*
+	FROM imgPropiedad ip
+	JOIN propiedad p ON ip.idPropiedad = p.idPropiedad
+	JOIN (
+		SELECT idPropiedad
+		FROM reserva
+		WHERE estado = 'cancelado' AND DATEDIFF(CURDATE(), fechaReserva) <= dias_atras
+	) prop ON p.idPropiedad = prop.idPropiedad
+	JOIN reserva r ON p.idPropiedad = r.idPropiedad;
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_imgPropiedad_canceladasUltimosdias(15);
+```
+
+4. Obtener imagenes de propiedades donde trabajen menos de 3 empleados y al menos uno de ellos es de cargo recepcionista.
+
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_imgPropiedad_x_empledaoRecepcionista;
+DELIMITER //
+CREATE PROCEDURE proc_obt_imgPropiedad_x_empledaoRecepcionista()
+BEGIN
+    CREATE TEMPORARY TABLE IF NOT EXISTS temp_resultados (
+	  idImgPropiedad INT PRIMARY KEY AUTO_INCREMENT,
+	  idPropiedad INT NOT NULL,
+	  urlImagen VARCHAR(255) NOT NULL,
+	  descripcion VARCHAR(255) NOT NULL
+    );
+    
+	INSERT INTO temp_resultados
+	SELECT DISTINCT ip.*
+	FROM imgPropiedad ip
+	JOIN propiedad p ON ip.idPropiedad = p.idPropiedad
+	JOIN trabajaEn t ON p.idPropiedad = t.idPropiedad
+	JOIN empleado e ON t.idEmpleado = e.idEmpleado
+	WHERE e.idCargo = (
+		SELECT idCargo 
+		FROM cargo 
+		WHERE nombre = 'recepcionista')
+	GROUP BY ip.idImgPropiedad
+	HAVING COUNT(t.idEmpleado) < 3;
+
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_imgPropiedad_x_empledaoRecepcionista();
+```
+
+5. Obtener los diferentes dominios de las url de las imagenes de las propiedades.
+
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_dominioUrlImgPropiedad;
+DELIMITER //
+CREATE PROCEDURE proc_obt_dominioUrlImgPropiedad()
+BEGIN
+    CREATE TEMPORARY TABLE IF NOT EXISTS temp_resultados (
+	  dominioUrlImagen VARCHAR(255) NOT NULL
+    );
+    
+	INSERT INTO temp_resultados
+	SELECT DISTINCT 
+    SUBSTRING_INDEX(SUBSTRING_INDEX(ip.urlImagen, '/', 3), '//', -1) AS dominio
+	FROM imgPropiedad ip;
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_dominioUrlImgPropiedad();
 ```
 
