@@ -1790,3 +1790,215 @@ AND p.valorxNoche < (SELECT AVG(valorxNoche) FROM propiedad)
 AND r.calificacion = 4;
 ```
 
+### CRUD para Tabla ubicacionPropiedad
+- Obtener todos los registros:
+```sql
+  SELECT * FROM ubicacionPropiedad;
+```
+
+- Obtener registro:
+```sql
+  SELECT * FROM ubicacionPropiedad WHERE idPropiedad = 1;
+```
+
+- Insertar registro:
+```sql
+    INSERT INTO ubicacionPropiedad (idPropiedad, departamento, ciudad, direccion, detalle) VALUES
+    (1, 'Antioquia', 'Medellin', 'Calle 123', 'Cerca de la playa');
+```
+
+- Actualizar registro:
+```sql
+    UPDATE ubicacionPropiedad SET ciudad = 'San Gil' WHERE idPropiedad = 1;
+```
+
+- Eliminar registro:
+```sql
+    DELETE FROM ubicacionPropiedad WHERE idPropiedad = 5;
+```
+
+### Consultas para Tabla ubicacionPropiedad
+
+1. Obtener las propiedades que estan ubicadas en barrios del departamento de antioquia, permitan mascotas y tengan al menos una (1) imagen con descripcion. 
+
+```sql
+DROP PROCEDURE IF EXISTS prc_obt_propiedad_departamentoMascotasImagen;
+DELIMITER //
+CREATE PROCEDURE prc_obt_propiedad_departamentoMascotasImagen()
+BEGIN
+	CREATE TEMPORARY TABLE temp_resultados AS
+	SELECT
+		p.*,
+		up.departamento,
+		up.ciudad,
+		up.direccion,
+		up.detalle AS barrio,
+		dp.mascotas,
+		ip.urlImagen,
+		ip.descripcion AS imagen_descripcion
+	FROM propiedad p
+	JOIN ubicacionPropiedad up ON p.idPropiedad = up.idPropiedad
+	JOIN detallePropiedad dp ON p.idPropiedad = dp.idPropiedad
+	JOIN imgPropiedad ip ON p.idPropiedad = ip.idPropiedad
+	WHERE up.departamento = 'Antioquia'
+		AND EXISTS (
+			SELECT 1
+			FROM ubicacionPropiedad up_sub
+			WHERE up_sub.idPropiedad = p.idPropiedad
+				AND up_sub.detalle LIKE '%barrio%'
+		)
+		AND dp.mascotas = 'si'
+		AND EXISTS (
+			SELECT 1
+			FROM imgPropiedad ip_sub
+			WHERE ip_sub.idPropiedad = p.idPropiedad
+				AND ip_sub.descripcion IS NOT NULL
+				AND ip_sub.descripcion != ''
+		);
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL prc_obt_propiedad_departamentoMascotasImagen();
+```
+
+2. Obtener el promedio de la longitud de las direcciones de las propiedades, agrupar las propiedades por longitud inferior al promedio y superior al promedio. 
+
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_propiedad_direccionLongitud;
+DELIMITER //
+CREATE PROCEDURE proc_obt_propiedad_direccionLongitud()
+BEGIN
+	CREATE TEMPORARY TABLE temp_resultados AS
+	SELECT
+		idPropiedad,
+		direccion,
+		LENGTH(direccion) AS longitudDireccion,
+		CASE
+			WHEN LENGTH(direccion) < avg_length THEN 'Inferior al Promedio'
+			WHEN LENGTH(direccion) >= avg_length THEN 'Superior o Igual al Promedio'
+		END AS grupoLongitud
+	FROM (
+			SELECT
+				p.idPropiedad,
+				up.direccion,
+				AVG(LENGTH(up.direccion)) OVER () AS avg_length
+			FROM propiedad p
+			JOIN ubicacionPropiedad up ON p.idPropiedad = up.idPropiedad
+		) AS propiedades_con_promedio;
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_propiedad_direccionLongitud();
+```
+
+3. Obtener las ciudades que tienen propiedades reservadas por huespedes cuya longitud de nombre y apellido es mayor a la longitud de caracteres solicitado y empleados cuya longitud de nombre es inferior al promedio.
+
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_propiedad_empleadoHuespedLongitud;
+DELIMITER //
+CREATE PROCEDURE proc_obt_propiedad_empleadoHuespedLongitud(IN longitud_nombre_huesped INT)
+BEGIN
+	CREATE TEMPORARY TABLE temp_resultados AS
+	SELECT DISTINCT up.ciudad
+	FROM ubicacionPropiedad up
+	JOIN propiedad p ON up.idPropiedad = p.idPropiedad
+	JOIN reserva r ON p.idPropiedad = r.idPropiedad
+	JOIN huesped h ON r.idHuesped = h.idHuesped
+	JOIN trabajaEn t ON t.idPropiedad = p.idPropiedad
+	JOIN empleado e ON t.idEmpleado = e.idEmpleado
+	WHERE LENGTH(h.nombres) + LENGTH(h.apellidos) > longitud_nombre_huesped
+	AND LENGTH(e.nombres) < (
+		SELECT AVG(LENGTH(nombres))
+		FROM empleado
+	);
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_propiedad_empleadoHuespedLongitud(14);
+```
+
+4. Obtener las direcciones de las propiedades que no tienen ningun servicio adicional y tienen mas de 2 empleados trabajando en dicha propiedad.
+
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_direccionPropiedad_noServicios_masEmpleados;
+DELIMITER //
+CREATE PROCEDURE proc_obt_direccionPropiedad_noServicios_masEmpleados()
+BEGIN
+	CREATE TEMPORARY TABLE temp_resultados AS
+	SELECT DISTINCT  up.direccion, up.idPropiedad
+	FROM ubicacionPropiedad up
+	JOIN propiedad p ON up.idPropiedad = p.idPropiedad
+	JOIN trabajaEn te ON p.idPropiedad = te.idPropiedad
+	JOIN empleado e ON te.idEmpleado = e.idEmpleado
+	WHERE p.idPropiedad NOT IN (
+			SELECT sp.idPropiedad
+			FROM servicioPropiedad sp
+		)
+	AND up.idPropiedad IN (
+		SELECT tra.idPropiedad
+		FROM trabajaEn tra
+		GROUP BY tra.idPropiedad
+		HAVING count(tra.idEmpleado) > 2
+	);
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_direccionPropiedad_noServicios_masEmpleados();
+```
+
+5. Obtener la ciudad con mas propiedades y menos en empleados en total trabajando en ellas.
+
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_ciudad_masPropiedades_menosEmpleados;
+DELIMITER //
+CREATE PROCEDURE proc_obt_ciudad_masPropiedades_menosEmpleados()
+BEGIN
+	CREATE TEMPORARY TABLE temp_resultados AS
+	SELECT ciudad, cantidadPropiedades, cantidadEmpleados
+	FROM (
+		SELECT
+			up.ciudad,
+			COUNT(DISTINCT up.idPropiedad) AS cantidadPropiedades,
+			COUNT(DISTINCT te.idEmpleado) AS cantidadEmpleados
+		FROM ubicacionPropiedad up
+		JOIN trabajaEn te ON up.idPropiedad = te.idPropiedad
+		GROUP BY up.ciudad
+	) AS ciudad_info
+	ORDER BY cantidadPropiedades DESC, cantidadEmpleados ASC
+	LIMIT 1;
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_ciudad_masPropiedades_menosEmpleados();
+```
+
