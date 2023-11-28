@@ -234,7 +234,10 @@ INSERT INTO trabajaEn (idPropiedad, idEmpleado) VALUES
 (17, 8),
 (18, 9),
 (19, 10),
-(20, 2);
+(20, 2),
+(5, 4),
+(6, 3),
+(6, 6);
 
 INSERT INTO reserva (idPropiedad, idHuesped, fechaReserva, fechaEntrada, diasEstancia, estado) VALUES
 (1, 5, '2023-11-25', '2023-12-01', 6, 'confirmado'),
@@ -256,7 +259,28 @@ INSERT INTO reserva (idPropiedad, idHuesped, fechaReserva, fechaEntrada, diasEst
 (17, 9, '2023-12-11', '2024-01-02', 7, 'completada'),
 (18, 16, '2023-12-12', '2024-01-04', 3, 'confirmado'),
 (19, 19, '2023-12-13', '2024-01-06', 4, 'pendiente'),
-(20, 17, '2023-12-14', '2024-01-08', 5, 'completada');
+(20, 17, '2023-12-14', '2024-01-08', 5, 'completada')g
+(1, 6, '2019-01-15', '2019-02-01', 5, 'confirmado'),
+(2, 9, '2019-02-20', '2019-03-10', 3, 'completada'),
+(3, 15, '2019-03-25', '2019-04-05', 7, 'confirmado'),
+(4, 18, '2019-04-10', '2019-05-01', 4, 'pendiente'),
+(5, 1, '2019-05-15', '2019-06-01', 6, 'completada'),
+(6, 3, '2019-06-20', '2019-07-10', 2, 'confirmado'),
+(7, 5, '2020-01-15', '2020-02-01', 5, 'confirmado'),
+(8, 7, '2020-02-20', '2020-03-10', 3, 'completada'),
+(9, 11, '2020-03-25', '2020-04-05', 7, 'confirmado'),
+(10, 13, '2020-04-10', '2020-05-01', 10, 'pendiente'),
+(11, 17, '2020-05-15', '2020-06-01', 6, 'completada'),
+(12, 19, '2020-06-20', '2020-07-10', 2, 'confirmado'),
+(13, 20, '2023-01-15', '2023-02-01', 5, 'confirmado'),
+(14, 1, '2023-02-20', '2023-03-10', 3, 'completada'),
+(15, 1, '2023-03-25', '2023-04-05', 7, 'confirmado'),
+(16, 5, '2023-04-10', '2023-05-01', 4, 'pendiente'),
+(17, 7, '2023-05-15', '2023-06-01', 6, 'completada'),
+(18, 7, '2023-06-20', '2023-07-10', 2, 'confirmado'),
+(19, 11, '2024-01-15', '2024-02-01', 5, 'confirmado'),
+(20, 11, '2024-02-20', '2024-03-10', 3, 'completada');
+
 
 
 -- EL VALOR DEL PAGO ES OMITIDO, YA QUE ES VERIFICADO Y CALCULADO POR UN TRIGGER
