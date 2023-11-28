@@ -280,7 +280,6 @@ DELIMITER ;
 CALL proc_obt_nombre_cargo_propiedad_xDescripcion('moderno');
 ```
 
-## Consultas Base de Datos
 
 ### CRUD para Tabla Empleado
 - Obtener todos los registros:
@@ -517,7 +516,6 @@ DELIMITER ;
 CALL proc_obt_empleados_x_masServicio_masValor();
 ```
 
-## Consultas Base de Datos
 
 ### CRUD para Tabla TrabajaEn
 - Obtener todos los registros:
@@ -751,5 +749,218 @@ BEGIN
 END //
 DELIMITER ;
 CALL proc_obt_propiedadesEmpleados_masCanceladas_masEmpleados();
+```
+
+
+### CRUD para Tabla Propiedad
+- Obtener todos los registros:
+```sql
+  SELECT * FROM propiedad;
+```
+
+- Obtener registro:
+```sql
+  SELECT * FROM propiedad WHERE idPropiedad = 1;
+```
+
+- Insertar registro:
+```sql
+    INSERT INTO propiedad (descripcion, valorxNoche) VALUES
+    ('Hermosa casa con vista al mar', 600000);
+```
+
+- Actualizar registro:
+```sql
+    UPDATE propiedad SET descripcion = 'Hermosa casa con vista al mar' WHERE idPropiedad = 1;
+```
+
+- Eliminar registro por idEmpleado o idPropiedad:
+```sql
+    DELETE FROM propiedad WHERE idPropiedad = 1;
+```
+
+### Consultas para Tabla Propiedad
+1. Obtener propiedades cuya reserva haya sido reembolsadas, y esten ubicadas en la ciudad ingresada.
+
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_propiedades_con_reserva_ciudad;
+DELIMITER //
+CREATE PROCEDURE proc_obt_propiedades_con_reserva_ciudad(IN ciudadBuscada VARCHAR(40))
+BEGIN
+    CREATE TEMPORARY TABLE IF NOT EXISTS temp_resultados (
+        idPropiedad int,
+        descripcion TEXT,
+        valorxNoche double 
+    );
+
+	INSERT INTO temp_resultados
+    SELECT pro.* FROM propiedad pro, reserva re, pago pa, reembolso rem
+    WHERE pro.idPropiedad = re.idPropiedad
+    AND re.idReserva = pa.idReserva
+    AND rem.idPago = pa.idPago
+    AND pro.idPropiedad IN (
+        SELECT ub.idPropiedad FROM ubicacionPropiedad ub
+        WHERE ub.ciudad = ciudadBuscada
+        );
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_propiedades_con_reserva_ciudad('Bogota');
+```
+
+2. Obtener propiedades con el valor por noche incrementado un 10% si posee mas de un(1) servicio, si no posee servicios decrementarle un 10%.
+
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_propiedadIncremento_x_servicios;
+DELIMITER //
+CREATE PROCEDURE proc_obt_propiedadIncremento_x_servicios()
+BEGIN
+    CREATE TEMPORARY TABLE IF NOT EXISTS temp_resultados (
+        idPropiedad int,
+        descripcion TEXT,
+        valorxNoche double,
+        nuevoValorxNoche double 
+    );
+
+	INSERT INTO temp_resultados
+    SELECT idPropiedad, descripcion, valorxNoche,
+        (
+            CASE
+                WHEN idPropiedad IN (
+                    SELECT idPropiedad FROM servicioPropiedad) THEN 
+                ROUND(valorxNoche * 1.1)
+            ELSE 
+                ROUND(valorxNoche * 0.9)
+            END
+        ) AS nuevoValorxNoche
+    FROM propiedad;
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_propiedadIncremento_x_servicios();
+```
+
+3. Obtener propiedades en las que se haya hecho una reseña con una calificacion inferior al promedio de calificaciones.
+
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_propiedad_inferiorCalificacion;
+DELIMITER //
+CREATE PROCEDURE proc_obt_propiedad_inferiorCalificacion()
+BEGIN
+    CREATE TEMPORARY TABLE IF NOT EXISTS temp_resultados (
+        idPropiedad int,
+        descripcion TEXT,
+        valorxNoche double
+    );
+
+	INSERT INTO temp_resultados
+    SELECT * FROM propiedad pro
+    WHERE pro.idPropiedad IN (
+        SELECT DISTINCT idPropiedad FROM resena
+        WHERE resena.calificacion >= (
+            SELECT ROUND(AVG(re.calificacion)) 
+            FROM resena re)
+    );
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_propiedad_inferiorCalificacion();
+```
+
+4. Obtener propiedades con capacidad de huespedes superior al promedio, adicional obten la suma de solo las habitaciones de las propiedades que cumplan dicha condicion.
+
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_propiedad_mayorCapacidad_totalHabitaciones;
+DELIMITER //
+CREATE PROCEDURE proc_obt_propiedad_mayorCapacidad_totalHabitaciones()
+BEGIN
+    CREATE TEMPORARY TABLE IF NOT EXISTS temp_resultados (
+        idPropiedad int,
+        descripcion TEXT,
+        capacidadHuespedes int,
+        totalHabitaciones integer
+    );
+
+	INSERT INTO temp_resultados
+    SELECT 
+        p.idPropiedad,
+        p.descripcion,
+        dp.capacidadHuespedes,
+        SUM(dp.numHabitaciones) AS totalHabitaciones
+    FROM propiedad p
+    JOIN detallePropiedad dp ON p.idPropiedad = dp.idPropiedad
+    WHERE dp.capacidadHuespedes > (
+        SELECT AVG(capacidadHuespedes)
+        FROM detallePropiedad
+    )
+    GROUP BY p.idPropiedad, p.descripcion, dp.capacidadHuespedes;
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_propiedad_mayorCapacidad_totalHabitaciones();
+```
+
+5. Obtener el valor por noche de aquellas propiedades que han sido canceladas por clientes que contengan la letra h en su nombre o apellido ordenado ascendentemente.
+
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_propiedad_mayorCapacidad_totalHabitaciones;
+DELIMITER //
+CREATE PROCEDURE proc_obt_propiedad_mayorCapacidad_totalHabitaciones()
+BEGIN
+    CREATE TEMPORARY TABLE IF NOT EXISTS temp_resultados (
+        idPropiedad int,
+        descripcion TEXT,
+        valorxNoche double,
+        estado varchar(15),
+        fechaReserva date,
+        nombreHuesped varchar(50)
+    );
+
+	INSERT INTO temp_resultados
+    SELECT 
+        pro.*,
+        re.estado,
+        re.fechaReserva,
+        CONCAT(hu.nombres, ' ', hu.apellidos) as NombreHuesped
+    FROM propiedad pro
+    JOIN reserva re ON pro.idPropiedad = re.idPropiedad
+    JOIN huesped hu ON re.idHuesped = hu.idHuesped
+    WHERE re.estado = 'cancelado' 
+    AND (hu.nombres LIKE '%h%' OR hu.apellidos LIKE '%h%')
+    ORDER BY hu.nombres ASC, hu.apellidos ASC;
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_propiedad_mayorCapacidad_totalHabitaciones();
 ```
 
