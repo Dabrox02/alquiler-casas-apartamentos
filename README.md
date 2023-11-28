@@ -1604,3 +1604,189 @@ DELIMITER ;
 CALL proc_obt_dominioUrlImgPropiedad();
 ```
 
+### CRUD para Tabla detallePropiedad
+- Obtener todos los registros:
+```sql
+  SELECT * FROM detallePropiedad;
+```
+
+- Obtener registro:
+```sql
+  SELECT * FROM detallePropiedad WHERE idPropiedad = 1;
+```
+
+- Insertar registro:
+```sql
+    INSERT INTO detallePropiedad (idPropiedad, capacidadHuespedes, numHabitaciones, mascotas, numBanos, tipoPropiedad) VALUES
+    (1, 8, 4, 'si', 3, 'casa');
+```
+
+- Actualizar registro:
+```sql
+    UPDATE detallePropiedad SET numHabitaciones = 15 WHERE idPropiedad = 1;
+```
+
+- Eliminar registro:
+```sql
+    DELETE FROM detallePropiedad WHERE idPropiedad = 5;
+```
+
+### Consultas para Tabla detallePropiedad
+
+1. Obtener propiedades que tienen reservas confirmadas y una capacidad de huéspedes superior al promedio.
+
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_propiedad_mayorPromedioHuespedes;
+DELIMITER //
+CREATE PROCEDURE proc_obt_propiedad_mayorPromedioHuespedes()
+BEGIN
+    CREATE TEMPORARY TABLE IF NOT EXISTS temp_resultados (
+	  idPropiedad int,
+	  descripcion TEXT,
+	  valorxNoche double
+    );
+    
+	INSERT INTO temp_resultados
+	SELECT propiedad.*
+	FROM propiedad
+	WHERE idPropiedad IN (
+		SELECT dp.idPropiedad
+		FROM detallePropiedad dp
+		JOIN reserva r ON dp.idPropiedad = r.idPropiedad AND r.estado = 'confirmado'
+		WHERE dp.capacidadHuespedes > (SELECT AVG(capacidadHuespedes) FROM detallePropiedad)
+	);
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_propiedad_mayorPromedioHuespedes();
+```
+
+2. Obtener propiedades con menor numero de baños por ciudad, mostrar el id o los id de identificacion de las propiedades agrupados.
+
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_propiedades_menosBanos;
+DELIMITER //
+CREATE PROCEDURE proc_obt_propiedades_menosBanos()
+BEGIN
+    CREATE TEMPORARY TABLE IF NOT EXISTS temp_resultados (
+	  ciudad VARCHAR(50),
+	  idPropiedades TEXT
+    );
+    
+	INSERT INTO temp_resultados
+	SELECT 
+		u.ciudad,
+		GROUP_CONCAT(u.idPropiedad) AS idsPropiedadConMenorBanos
+	FROM ubicacionPropiedad u
+	JOIN detallePropiedad dp ON u.idPropiedad = dp.idPropiedad
+	WHERE (u.ciudad, dp.numBanos) IN (
+			SELECT 
+				u2.ciudad,
+				MIN(dp2.numBanos) AS minBanos
+			FROM ubicacionPropiedad u2
+			JOIN detallePropiedad dp2 ON u2.idPropiedad = dp2.idPropiedad
+			GROUP BY u2.ciudad
+		) GROUP BY  u.ciudad;
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_propiedades_menosBanos();
+```
+
+3. Obtener el numero de propiedades de tipo habitacion que hayan sido canceladas por ciudad, teniendo en cuenta aquellas ciudades que no han tenido reservas canceladas.
+
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_numReservasCanceladas_x_ciudad_tipoHabitacion;
+DELIMITER //
+CREATE PROCEDURE proc_obt_numReservasCanceladas_x_ciudad_tipoHabitacion()
+BEGIN
+    CREATE TEMPORARY TABLE IF NOT EXISTS temp_resultados (
+	  ciudad VARCHAR(40),
+	  cantidadCanceladas TEXT
+    );
+    
+	INSERT INTO temp_resultados
+	SELECT
+		u.ciudad,
+		(SELECT COUNT(*)
+		 FROM reserva r
+		 WHERE r.estado = 'cancelado' AND r.idPropiedad = p.idPropiedad) AS NumeroPropiedadesCanceladas
+	FROM ubicacionPropiedad u
+	JOIN propiedad p ON u.idPropiedad = p.idPropiedad
+	JOIN detallePropiedad dp ON p.idPropiedad = dp.idPropiedad
+	WHERE dp.tipoPropiedad = 'habitacion'
+	GROUP BY u.ciudad;
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_numReservasCanceladas_x_ciudad_tipoHabitacion();
+```
+
+4. Obtener el promedio de numero de huespedes por departamento y por tipo de propiedad.
+
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_propiedad_porDepartamento_promedioHuespedes;
+DELIMITER //
+CREATE PROCEDURE proc_obt_propiedad_porDepartamento_promedioHuespedes()
+BEGIN
+    CREATE TEMPORARY TABLE IF NOT EXISTS temp_resultados (
+	  departamento VARCHAR(50),
+	  tipoPropiedad VARCHAR(15),
+      PromedioHuespedes TEXT
+    );
+    
+	INSERT INTO temp_resultados
+	SELECT
+		u.departamento,
+		dp.tipoPropiedad,
+		CEIL(AVG(dp.capacidadHuespedes)) AS PromedioHuespedes
+	FROM ubicacionPropiedad u
+	JOIN detallePropiedad dp ON u.idPropiedad = dp.idPropiedad
+	GROUP BY u.departamento, dp.tipoPropiedad;
+    
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_propiedad_porDepartamento_promedioHuespedes();
+```
+
+5. Obtener las propiedades que permiten mascotas, cuyo valor por noche es inferior al promedio y posea calificaciones de 4.
+
+```sql
+SELECT
+    p.idPropiedad,
+    p.descripcion,
+    p.valorxNoche,
+    dp.mascotas,
+    r.calificacion
+FROM propiedad p
+JOIN detallePropiedad dp ON p.idPropiedad = dp.idPropiedad
+JOIN resena r ON p.idPropiedad = r.idPropiedad
+WHERE dp.mascotas = 'si'
+AND p.valorxNoche < (SELECT AVG(valorxNoche) FROM propiedad)
+AND r.calificacion = 4;
+```
+
