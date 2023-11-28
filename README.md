@@ -1164,7 +1164,9 @@ BEGIN
         valorTotal DOUBLE
     );
     INSERT INTO temp_resultados (idPropiedad, valorTotal)
-    SELECT p.idPropiedad, p.valorxNoche * COUNT(sp.idServicio) AS valor_total
+    SELECT 
+        p.idPropiedad, 
+        p.valorxNoche * COUNT(sp.idServicio) AS valor_total
     FROM propiedad p
     LEFT JOIN servicioPropiedad sp ON p.idPropiedad = sp.idPropiedad
     GROUP BY p.idPropiedad, p.descripcion, p.valorxNoche;
@@ -1180,3 +1182,218 @@ END //
 DELIMITER ;
 CALL proc_obt_incrementoValorxServicios();
 ```
+
+### CRUD para Tabla servicioAdicional
+- Obtener todos los registros:
+```sql
+  SELECT * FROM servicioAdicional;
+```
+
+- Obtener registro:
+```sql
+  SELECT * FROM servicioPropiedad WHERE idServicio = 1;
+```
+
+- Insertar registro:
+```sql
+    INSERT INTO servicioAdicional (nombreServicio, descripcion) VALUES
+    ('Wi-Fi', 'Conexion de alta velocidad');
+```
+
+- Actualizar registro:
+```sql
+    UPDATE servicioAdicional SET nombreServicio = "Internet Inalambrico" WHERE idServicio = 1;
+```
+
+- Eliminar registro por idEmpleado o idPropiedad:
+```sql
+    DELETE FROM servicioAdicional WHERE idServicio = 5;
+```
+
+### Consultas para Tabla servicioAdicional
+
+1. Obtener el promedio de caracteres de la descripcion de los servicios adicionales, si la longitud de la descripcion del servicio adicional es menor al promedio indicar "inferior", en caso contrario "superior".
+
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_longitudPromedioDescripcionServicio;
+DELIMITER //
+CREATE PROCEDURE proc_obt_longitudPromedioDescripcionServicio()
+BEGIN
+    CREATE TEMPORARY TABLE IF NOT EXISTS temp_resultados (
+		idServicio INT,
+		descripcion VARCHAR(255),
+		longitud_descripcion INT,
+		comparacion VARCHAR(10)
+    );
+    
+	INSERT INTO temp_resultados
+	SELECT
+		idServicio,
+		descripcion,
+		LENGTH(descripcion) AS longitud_descripcion,
+		CASE
+		WHEN LENGTH(descripcion) < (
+		  SELECT AVG(LENGTH(descripcion)) FROM servicioAdicional
+		) THEN 'inferior'
+		ELSE 'superior'
+	END AS comparacion
+	FROM servicioAdicional;
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_longitudPromedioDescripcionServicio();
+```
+
+2. Obtener los servicios adicionales de propiedades que han sido reservadas por clientes que han realizado almenos una reserva y cuya reserva se encuentre en estado confirmado o completada.
+
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_servicios_conReserva_confirmadoCompletada;
+DELIMITER //
+CREATE PROCEDURE proc_obt_servicios_conReserva_confirmadoCompletada()
+BEGIN
+    CREATE TEMPORARY TABLE IF NOT EXISTS temp_resultados (
+	  idServicio INT,
+	  nombreServicio VARCHAR(50)
+    );
+    
+	INSERT INTO temp_resultados
+	SELECT DISTINCT sp.idServicio, sa.nombreServicio
+	FROM servicioPropiedad sp
+	JOIN reserva r ON sp.idPropiedad = r.idPropiedad
+	JOIN (
+		SELECT idHuesped
+		FROM reserva
+		WHERE estado IN ('confirmado', 'completada')
+		GROUP BY idHuesped
+		HAVING COUNT(idReserva) >= 1
+	) clientes_multireserva ON r.idHuesped = clientes_multireserva.idHuesped
+	JOIN servicioAdicional sa ON sp.idServicio = sa.idServicio
+	WHERE r.estado IN ('confirmado', 'completada')
+	ORDER BY sp.idServicio;
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_servicios_conReserva_confirmadoCompletada();
+```
+
+3. Obtener los servicios adicionales que han sido reservados en propiedades sin importar el estado de la reserva, que permiten mascotas y son propiedades de tipo apartamento.
+
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_servicios_conReserva_mascotasApartamento;
+DELIMITER //
+CREATE PROCEDURE proc_obt_servicios_conReserva_mascotasApartamento()
+BEGIN
+    CREATE TEMPORARY TABLE IF NOT EXISTS temp_resultados (
+	  idServicio INT,
+	  nombreServicio VARCHAR(50)
+    );
+    
+	INSERT INTO temp_resultados
+	SELECT DISTINCT sp.idServicio, sa.nombreServicio
+	FROM servicioPropiedad sp
+	JOIN (
+		SELECT prop.idPropiedad
+		FROM propiedad prop
+		JOIN detallePropiedad det ON prop.idPropiedad = det.idPropiedad
+		WHERE det.mascotas = 'si' AND det.tipoPropiedad = 'apartamento'
+	) as apart ON sp.idPropiedad = apart.idPropiedad
+	JOIN servicioAdicional sa ON sp.idServicio = sa.idServicio;
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_servicios_conReserva_mascotasApartamento();
+```
+
+4. Obtener servicios adicionales de propiedades reservadas en el mes de noviembre de cualquier año.
+
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_servicios_conReservaNoviembre;
+DELIMITER //
+CREATE PROCEDURE proc_obt_servicios_conReservaNoviembre()
+BEGIN
+    CREATE TEMPORARY TABLE IF NOT EXISTS temp_resultados (
+	  idServicio INT,
+	  nombreServicio VARCHAR(50)
+    );
+    
+	INSERT INTO temp_resultados
+	SELECT DISTINCT sp.idServicio, sa.nombreServicio
+	FROM servicioPropiedad sp
+	JOIN (
+		SELECT idPropiedad
+		FROM reserva
+		WHERE MONTH(fechaReserva) = 11
+	) prop_subc ON sp.idPropiedad = prop_subc.idPropiedad
+	JOIN servicioAdicional sa ON sp.idServicio = sa.idServicio;
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_servicios_conReservaNoviembre();
+```
+
+5. Obtener una agrupacion por mes de los servicios adicionales de las propiedades reservadas en estado pendiente.
+
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_serviciosAgrupados_por_mes_pendientes;
+DELIMITER //
+CREATE PROCEDURE proc_obt_serviciosAgrupados_por_mes_pendientes()
+BEGIN
+    CREATE TEMPORARY TABLE IF NOT EXISTS temp_resultados (
+	  mes INT,
+	  nombreServicio VARCHAR(50),
+	  cantidad_reservas INT
+    );
+    
+	INSERT INTO temp_resultados
+	SELECT
+		MONTH(r.fechaReserva) AS mes,
+		GROUP_CONCAT(sa.nombreServicio ORDER BY sa.nombreServicio ASC) AS servicios,
+		COUNT(*) AS cantidad_reservas
+	FROM servicioPropiedad sp
+	JOIN(
+			SELECT idPropiedad
+			FROM reserva
+			WHERE estado = 'pendiente'
+		) prop ON sp.idPropiedad = prop.idPropiedad
+	JOIN
+		reserva r ON sp.idPropiedad = r.idPropiedad
+	JOIN
+		servicioAdicional sa ON sp.idServicio = sa.idServicio
+	GROUP BY mes
+	ORDER BY mes, cantidad_reservas DESC;
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_serviciosAgrupados_por_mes_pendientes();
+```
+
