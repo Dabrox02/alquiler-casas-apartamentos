@@ -964,3 +964,219 @@ DELIMITER ;
 CALL proc_obt_propiedad_mayorCapacidad_totalHabitaciones();
 ```
 
+### CRUD para Tabla servicioPropiedad
+- Obtener todos los registros:
+```sql
+  SELECT * FROM servicioPropiedad;
+```
+
+- Obtener registro por propiedad:
+- Obtener registro por servicio:
+```sql
+  SELECT * FROM servicioPropiedad WHERE idPropiedad = 1;
+  SELECT * FROM servicioPropiedad WHERE idServicio = 1;
+```
+
+- Insertar registro:
+```sql
+    INSERT INTO servicioPropiedad (idPropiedad, idServicio)
+    VALUES (1, 5);
+```
+
+- Actualizar registro:
+```sql
+    UPDATE servicioPropiedad SET idServicio = 2 WHERE idPropiedad = 15;
+```
+
+- Eliminar registro por idEmpleado o idPropiedad:
+```sql
+    DELETE FROM servicioPropiedad WHERE idServicio = 1;
+```
+
+### Consultas para Tabla servicioPropiedad
+
+1. Obtener servicios junto con un ID unico generado de la combinacion de los primeros 2 caracteres del nombre del servicio, el id primario del servicio y numero de caracteres de la descripcion.
+
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_idServicioUnicoGenerado;
+DELIMITER //
+CREATE PROCEDURE proc_obt_idServicioUnicoGenerado()
+BEGIN
+    CREATE TEMPORARY TABLE IF NOT EXISTS temp_resultados (
+        idServicio INT,
+        nombreServicio VARCHAR(50),
+        idUnicoGenerado TEXT
+    );
+
+	INSERT INTO temp_resultados (idServicio, nombreServicio, idUnicoGenerado)
+    SELECT DISTINCT 
+        sa.idServicio,
+        sa.nombreServicio, 
+        CONCAT(
+            UPPER(LEFT(sa.nombreServicio, 2)),
+            sa.idServicio,
+            LENGTH(sa.descripcion)
+        ) as ID
+    FROM servicioPropiedad sp
+    JOIN servicioAdicional sa ON sp.idServicio = sa.idServicio;
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_idServicioUnicoGenerado();
+```
+
+2. Obtener la propiedad con mas servicios adicionales que sea de tipo casa y no permita mascotas.
+
+```sql
+
+DROP PROCEDURE IF EXISTS proc_obt_propiedadCasa_masServicios_mascotasSi;
+DELIMITER //
+CREATE PROCEDURE proc_obt_propiedadCasa_masServicios_mascotasSi()
+BEGIN
+    CREATE TEMPORARY TABLE IF NOT EXISTS temp_resultados (
+        idPropiedad INT,
+        descripcionPropiedad VARCHAR(50),
+        totalServicios INTEGER,
+        permiteMascotas VARCHAR(10)
+    );
+
+	INSERT INTO temp_resultados (idPropiedad, descripcionPropiedad, totalServicios, permiteMascotas)
+    SELECT pro.idPropiedad, (
+        SELECT descripcion 
+        FROM propiedad 
+        WHERE propiedad.idPropiedad = pro.idPropiedad
+    ) ,
+        count(sep.idServicio),
+        det.mascotas
+    FROM propiedad pro
+    LEFT JOIN servicioPropiedad sep ON sep.idPropiedad = pro.idPropiedad
+    JOIN detallePropiedad det ON det.idPropiedad = pro.idPropiedad
+    WHERE det.tipoPropiedad = 'apartamento' and det.mascotas = 'si'
+    GROUP BY pro.idPropiedad
+    ORDER BY count(sep.idServicio) DESC
+    LIMIT 1;
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_propiedadCasa_masServicios_mascotasSi();
+```
+
+3. Obtener la propiedad mas economica, con menos servicios y que tenga almenos una reserva.
+
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_propiedad_masEconomica_masServicios_masReservas;
+DELIMITER //
+CREATE PROCEDURE proc_obt_propiedad_masEconomica_masServicios_masReservas()
+BEGIN
+    CREATE TEMPORARY TABLE IF NOT EXISTS temp_resultados (
+        idPropiedad INT,
+        descripcionPropiedad VARCHAR(255),
+        valorPorNoche DOUBLE,
+        totalReservas INT,
+        totalServicios INT
+    );
+
+    INSERT INTO temp_resultados (idPropiedad, descripcionPropiedad, valorPorNoche, totalReservas, totalServicios)
+    SELECT 
+        p.idPropiedad, 
+        p.descripcion, 
+        p.valorxNoche, 
+        COUNT(r.idReserva) AS totalReservas, 
+        COUNT(sp.idServicio) AS totalServicios
+    FROM propiedad p
+    JOIN reserva r ON p.idPropiedad = r.idPropiedad
+    LEFT JOIN servicioPropiedad sp ON p.idPropiedad = sp.idPropiedad
+    GROUP BY p.idPropiedad
+    HAVING COUNT(r.idReserva) >= 1
+    ORDER BY p.valorxNoche
+    LIMIT 1;
+
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_propiedad_masEconomica_masServicios_masReservas();
+```
+
+4. Obtener la propiedad con menos servicios y mas dias de estancia en una reserva que se encuentre en estado completada.
+
+```sql
+
+DROP PROCEDURE IF EXISTS proc_obt_propiedad_menosServicios_masDiasEstancia;
+DELIMITER //
+CREATE PROCEDURE proc_obt_propiedad_menosServicios_masDiasEstancia()
+BEGIN
+    CREATE TEMPORARY TABLE IF NOT EXISTS temp_resultados (
+        idPropiedad INT,
+        descripcionPropiedad VARCHAR(255),
+        valorPorNoche DOUBLE,
+        totalReservas INT,
+        totalServicios INT
+    );
+
+    INSERT INTO temp_resultados (idPropiedad, descripcionPropiedad, valorPorNoche, totalReservas, totalServicios)
+    SELECT p.idPropiedad, p.descripcion, p.valorxNoche, COUNT(sp.idServicio) AS totalServicios, r.diasEstancia
+    FROM propiedad p
+    JOIN reserva r ON p.idPropiedad = r.idPropiedad
+    LEFT JOIN servicioPropiedad sp ON p.idPropiedad = sp.idPropiedad
+    WHERE r.estado = 'completada'
+    GROUP BY p.idPropiedad, p.descripcion, r.diasEstancia
+    ORDER BY totalServicios ASC, r.diasEstancia DESC
+    LIMIT 1;
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_propiedad_menosServicios_masDiasEstancia();
+```
+
+5. Obtener el valor por noche de las propiedades, multiplicado por el numero de servicios adicionales que posee la propiedad. 
+
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_incrementoValorxServicios;
+DELIMITER //
+CREATE PROCEDURE proc_obt_incrementoValorxServicios()
+BEGIN
+    CREATE TEMPORARY TABLE IF NOT EXISTS temp_resultados (
+        idPropiedad INT,
+        valorTotal DOUBLE
+    );
+    INSERT INTO temp_resultados (idPropiedad, valorTotal)
+    SELECT p.idPropiedad, p.valorxNoche * COUNT(sp.idServicio) AS valor_total
+    FROM propiedad p
+    LEFT JOIN servicioPropiedad sp ON p.idPropiedad = sp.idPropiedad
+    GROUP BY p.idPropiedad, p.descripcion, p.valorxNoche;
+    
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_incrementoValorxServicios();
+```
