@@ -516,3 +516,240 @@ END //
 DELIMITER ;
 CALL proc_obt_empleados_x_masServicio_masValor();
 ```
+
+## Consultas Base de Datos
+
+### CRUD para Tabla TrabajaEn
+- Obtener todos los registros:
+```sql
+  SELECT * FROM trabajaEn;
+```
+
+- Obtener registro por idEmpleado o por idPropiedad:
+```sql
+  SELECT * FROM trabajaEn WHERE idEmpleado = 1;
+  SELECT * FROM trabajaEn WHERE idPropiedad = 1;
+```
+
+- Insertar registro:
+```sql
+    INSERT INTO trabajaEn (idPropiedad, idEmpleado) VALUES (1, 5);
+```
+
+- Actualizar registro:
+```sql
+    UPDATE trabajaEn SET idPropiedad = 1 WHERE idEmpleado = 2;
+```
+
+- Eliminar registro por idEmpleado o idPropiedad:
+```sql
+    DELETE FROM trabajaEn WHERE idEmpleado = 1;
+    DELETE FROM trabajaEn WHERE idPropiedad = 1;
+```
+
+### Consultas para Tabla TrabajaEn
+
+1. Obtener descripcion de la propiedad y email de los empleados que trabajan en dicha propiedad, de las propiedades que tengan un numero de habitaciones inferior al promedio y esten ubicados en el departamento ingresado.
+
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_trab_mayorPromedioHab_departamento;
+DELIMITER //
+CREATE PROCEDURE proc_obt_trab_mayorPromedioHab_departamento(IN nombre_departamento VARCHAR(100))
+BEGIN
+    CREATE TEMPORARY TABLE IF NOT EXISTS temp_resultados (
+        descripcion TEXT,
+        emailEmpleado VARCHAR(60)
+    );
+
+	INSERT INTO temp_resultados(descripcion, emailEmpleado)
+	SELECT DISTINCT pro.descripcion, em.email FROM trabajaEn tra, propiedad pro, empleado em
+	WHERE tra.idEmpleado = em.idEmpleado
+	AND tra.idPropiedad = pro.idPropiedad
+	AND tra.idPropiedad IN (
+		SELECT det.idPropiedad 
+		FROM detallePropiedad det
+		WHERE det.numHabitaciones > (
+			SELECT AVG(numHabitaciones) 
+			FROM detallePropiedad
+		))
+	AND tra.idPropiedad IN (
+		SELECT ub.idPropiedad 
+		FROM ubicacionPropiedad ub
+		WHERE LOWER(ub.departamento) = nombre_departamento
+	);
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_trab_mayorPromedioHab_departamento('antioquia');
+```
+
+2. Obtener los empleados que trabajan en propiedades que no tenga servicios adicionales y no tienen reservas en estado pendiente.
+
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_noServicios_noReservaPendiente;
+DELIMITER //
+CREATE PROCEDURE proc_obt_noServicios_noReservaPendiente()
+BEGIN
+    CREATE TEMPORARY TABLE IF NOT EXISTS temp_resultados (
+        idEmpleado INT,
+        dni VARCHAR(15),
+        nombres VARCHAR(40),
+        apellidos VARCHAR(40),
+        telefono VARCHAR(20),
+        email VARCHAR(60),
+        idCargo INT
+    );
+
+	INSERT INTO temp_resultados
+	SELECT DISTINCT em.* FROM trabajaen tra
+	JOIN empleado em ON em.idEmpleado = tra.idEmpleado
+	JOIN propiedad pro ON pro.idPropiedad = tra.idPropiedad
+	LEFT JOIN serviciopropiedad sep ON pro.idPropiedad = sep.idPropiedad
+	WHERE sep.idPropiedad IS NULL
+	AND tra.idPropiedad IN (
+		SELECT propiedad.idPropiedad
+		FROM propiedad
+		LEFT JOIN reserva ON propiedad.idPropiedad = reserva.idPropiedad
+		WHERE reserva.estado IS NULL OR reserva.estado != 'pendiente'
+	);
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_noServicios_noReservaPendiente();
+```
+
+3. Listar el/los empleados que trabajan en mas propiedades y que la descripcion de la propiedad posea mas de 45 caracteres, ordenarlos por nombre ascendentemente.
+
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_trabajaMas_descripcionMayor;
+DELIMITER //
+CREATE PROCEDURE proc_obt_trabajaMas_descripcionMayor()
+BEGIN
+    CREATE TEMPORARY TABLE IF NOT EXISTS temp_resultados (
+        idEmpleado INT,
+        dni VARCHAR(15),
+        nombres VARCHAR(40),
+        apellidos VARCHAR(40),
+        telefono VARCHAR(20),
+        email VARCHAR(60),
+        idCargo INT,
+        totalPropiedadesTrabaja INTEGER
+    );
+
+	INSERT INTO temp_resultados
+	SELECT em.*, COUNT(tra.idPropiedad)
+	FROM empleado em
+	JOIN trabajaEn tra ON em.idEmpleado = tra.idEmpleado
+	JOIN propiedad pro ON tra.idPropiedad = pro.idPropiedad
+	WHERE LENGTH(pro.descripcion) > 45
+	GROUP BY em.idEmpleado, em.nombres, em.apellidos
+	ORDER BY em.nombres ASC;
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_trabajaMas_descripcionMayor();
+```
+
+4. Lista el nombre del empleado y nombre de los servicios por propiedad ordenarlos descentenmente por el nombre del servicio, ten en cuenta que pueden existir propiedades sin servicios adicionales.
+
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_agrupacion_EmpleadoServicios;
+DELIMITER //
+CREATE PROCEDURE proc_obt_agrupacion_EmpleadoServicios()
+BEGIN
+    CREATE TEMPORARY TABLE IF NOT EXISTS temp_resultados (
+        idPropiedad INT,
+        nombres VARCHAR(100),
+        totalPropiedadesTrabaja TEXT
+    );
+
+	INSERT INTO temp_resultados
+	SELECT pro.idPropiedad, CONCAT(em.nombres, " ", em.apellidos),
+		(
+			SELECT GROUP_CONCAT(
+				servicioAdicional.nombreServicio 
+				ORDER BY servicioAdicional.nombreServicio DESC)
+			FROM servicioPropiedad
+			LEFT JOIN servicioAdicional ON servicioPropiedad.idServicio = servicioAdicional.idServicio
+			WHERE servicioPropiedad.idPropiedad = pro.idPropiedad
+		) AS servicios
+	FROM empleado em
+	JOIN trabajaEn tra ON em.idEmpleado = tra.idEmpleado
+	JOIN propiedad pro ON tra.idPropiedad = pro.idPropiedad
+	ORDER BY servicios DESC;
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_agrupacion_EmpleadoServicios();
+```
+
+5. Encontrar las 5 propiedades con el mayor número de reservas canceladas en el segundo semestre del año 2023 y mayor numero de empleados que trabajan en dichas propiedades.
+
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_propiedadesEmpleados_masCanceladas_masEmpleados;
+DELIMITER //
+CREATE PROCEDURE proc_obt_propiedadesEmpleados_masCanceladas_masEmpleados()
+BEGIN
+    CREATE TEMPORARY TABLE IF NOT EXISTS temp_resultados (
+        idPropiedad INT,
+        descripcion TEXT,
+        totalReservasCanceladas INTEGER,
+        totalEmpleados INTEGER
+    );
+
+	INSERT INTO temp_resultados
+	SELECT pro.idPropiedad, pro.descripcion,
+		(
+			SELECT COUNT(DISTINCT re.idReserva)
+			FROM reserva re
+			WHERE pro.idPropiedad = re.idPropiedad
+				AND re.estado = 'cancelado'
+				AND YEAR(re.fechaReserva) = 2023
+				AND MONTH(re.fechaReserva) BETWEEN 7 AND 12
+		) AS totalReservasCanceladas,
+		(
+			SELECT COUNT(DISTINCT tra.idEmpleado)
+			FROM trabajaEn tra
+			WHERE pro.idPropiedad = tra.idPropiedad
+		) AS totalEmpleados
+	FROM propiedad pro
+	ORDER BY totalReservasCanceladas DESC, totalEmpleados DESC
+	LIMIT 5;
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_propiedadesEmpleados_masCanceladas_masEmpleados();
+```
+
