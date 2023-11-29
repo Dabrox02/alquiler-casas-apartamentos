@@ -4,7 +4,19 @@
 
 Se requiere la implementacion de una base de datos que tiene como objetivo centralizar y optimizar la gestion de los alquileres de propiedades. Esta herramienta permitira administrar eficientemente la informacion relacionada con empleados, propiedades, reservas, pagos, reseñas y estados de entrega. Ademas, facilitara la toma de decisiones estrategicas y mejorara la experiencia tanto para los huespedes como para los empleados.
 
-Se requiere cubrir las siguientes necesidades:
+## Modelo Conceptual
+
+La compañia "Viajemos Juntos" se especializa en el alquiler de propiedades para turistas en toda Colombia. Cuenta con un equipo de empleados dedicados que desempeñan diferentes roles en la gestion de las propiedades. Cada propiedad se presenta con imagenes detalladas, descripciones y detalles especificos como el tipo de propiedad, la politica de mascotas, el numero de baños, entre otros.
+
+Es crucial mantener registros precisos de la ubicacion exacta de cada propiedad para garantizar que los huespedes lleguen sin contratiempos. Ademas, las propiedades pueden ofrecer diversos servicios adicionales, como WiFi, lavanderia, limpieza, entre otros.
+
+Los huespedes tienen la posibilidad de reservar propiedades, y este proceso involucra cuatro estados hasta su completa realizacion. En la etapa inicial, "pendiente", la propiedad se reserva para un huesped. En la fase "confirmada", el cliente ha efectuado el pago correspondiente. El estado "completado" indica que el huesped ha llegado y disfrutado de su estancia, mientras que "cancelado" señala que el huesped ha decidido anular la reserva.
+
+Los empleados estan facultados para generar informes de entrega de cada propiedad, proporcionando un historial cuando la propiedad esta en alquiler. En el caso de cancelacion de una reserva con un pago registrado, se activa un proceso de reembolso, que incluye una multa del 10%.
+
+Finalmente, los clientes pueden compartir sus experiencias y opiniones mediante reseñas, utilizando una escala de calificacion del 1 al 5. Su opinion es importante para mejorar los servicios de la empresa.
+
+## Modelo Logico
 
 ### Gestion de Empleados:
 - Registro detallado de empleados, incluyendo informacion como nombre, apellido, numero de identificacion, correo electronico y numero de telefono.
@@ -1633,7 +1645,7 @@ CALL proc_obt_dominioUrlImgPropiedad();
 
 ### Consultas para Tabla detallePropiedad
 
-1. Obtener propiedades que tienen reservas confirmadas y una capacidad de huéspedes superior al promedio.
+1. Obtener propiedades que tienen reservas confirmadas y una capacidad de huespedes superior al promedio.
 
 ```sql
 DROP PROCEDURE IF EXISTS proc_obt_propiedad_mayorPromedioHuespedes;
@@ -2319,8 +2331,7 @@ BEGIN
 			WHEN r.diasEstancia BETWEEN 1 AND 5 THEN '1-5'
 			WHEN r.diasEstancia BETWEEN 6 AND 10 THEN '6-10'
 			WHEN r.diasEstancia BETWEEN 11 AND 15 THEN '11-15'
-			-- Agrega más casos según sea necesario
-			ELSE 'Más de 15'
+			ELSE 'Mas de 15'
 		END AS grupoDias,
 		h.nombres AS nombresHuesped,
 		h.apellidos AS apellidosHuesped,
