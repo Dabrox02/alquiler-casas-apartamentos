@@ -259,7 +259,7 @@ INSERT INTO reserva (idPropiedad, idHuesped, fechaReserva, fechaEntrada, diasEst
 (17, 9, '2023-12-11', '2024-01-02', 7, 'completada'),
 (18, 16, '2023-12-12', '2024-01-04', 3, 'confirmado'),
 (19, 19, '2023-12-13', '2024-01-06', 4, 'pendiente'),
-(20, 17, '2023-12-14', '2024-01-08', 5, 'completada')g
+(20, 17, '2023-12-14', '2024-01-08', 5, 'completada'),
 (1, 6, '2019-01-15', '2019-02-01', 5, 'confirmado'),
 (2, 9, '2019-02-20', '2019-03-10', 3, 'completada'),
 (3, 15, '2019-03-25', '2019-04-05', 7, 'confirmado'),
