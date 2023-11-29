@@ -2647,3 +2647,210 @@ DELIMITER ;
 CALL proc_obt_descuentoAlPago_x_resenaPositiva();
 ```
 
+### CRUD para Tabla huesped
+- Obtener todos los registros:
+```sql
+  SELECT * FROM huesped;
+```
+
+- Obtener registro:
+```sql
+  SELECT * FROM huesped WHERE idHuesped = 1;
+```
+
+- Insertar registro:
+```sql
+    INSERT INTO huesped (dni,nombres,apellidos,telefono,email) VALUES
+    (33612670,'Mercedes','Hooper','496-1746','morbi@yahoo.edu');
+```
+
+- Actualizar registro:
+```sql
+    UPDATE huesped SET nombres = 'Maria' WHERE idHuesped = 1;
+```
+
+- Eliminar registro por idHuesped o idPropiedad:
+```sql
+    DELETE FROM huesped WHERE idHuesped = 1;
+```
+
+### Consultas para Tabla huesped
+
+1. Obtener huespedes cuyo DNI comienza y finaliza con el mismo Numero, y hayan realizado reservas pendientes, confirmadas o completadas en el año 2023.
+
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_dniHuesped_reservas_anyo;
+DELIMITER //
+CREATE PROCEDURE proc_obt_dniHuesped_reservas_anyo()
+BEGIN
+	CREATE TEMPORARY TABLE temp_resultados AS
+	SELECT
+		h.*,
+		r.fechaReserva,
+        r.fechaEntrada,
+        r.diasEstancia,
+        r.estado
+	FROM
+		huesped h
+	JOIN
+		reserva r ON h.idHuesped = r.idHuesped
+	WHERE
+		SUBSTRING(h.dni, 1, 1) = SUBSTRING(h.dni, LENGTH(h.dni), 1)
+		AND h.idHuesped IN (
+			SELECT DISTINCT idHuesped
+			FROM reserva
+			WHERE YEAR(fechaReserva) = 2023
+			AND estado IN ('pendiente', 'confirmado', 'completada')
+		);
+
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_dniHuesped_reservas_anyo();
+```
+
+2. Obtener un id de huesped generado, utilizando los dos primeros numeros del dni, los las dos ultimas letras de su nombre y apellido y una letra aleatoria. 
+
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_idGeneradoHuesped;
+DELIMITER //
+CREATE PROCEDURE proc_obt_idGeneradoHuesped()
+BEGIN
+	CREATE TEMPORARY TABLE temp_resultados AS
+	SELECT
+    huesped.dni,
+    CONCAT(huesped.nombres, ' ', huesped.apellidos) as NombreHuesped,
+    CONCAT(
+        SUBSTRING(dni, 1, 2),
+        SUBSTRING(nombres, LENGTH(nombres), 1),
+        SUBSTRING(apellidos, LENGTH(apellidos), 1),
+        CHAR(FLOOR(65 + RAND() * 26)) 
+    ) AS idGeneradorHuesped
+	FROM huesped;
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_idGeneradoHuesped();
+```
+
+3. Obtener los dominios de email de los huespedes y contar el numero total de huespedes que utiliza cada dominio.
+
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_huesped_agrupados_x_dominioEmail;
+DELIMITER //
+CREATE PROCEDURE proc_obt_huesped_agrupados_x_dominioEmail()
+BEGIN
+	CREATE TEMPORARY TABLE temp_resultados AS
+	SELECT
+    SUBSTRING_INDEX(email, '@', -1) AS dominio,
+    COUNT(idHuesped) AS numeroHuespedes
+	FROM huesped
+	GROUP BY dominio
+	ORDER BY numeroHuespedes DESC;
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_huesped_agrupados_x_dominioEmail();
+```
+
+4. Obtener huespedes que hayan realizado reservas en el mes de diciembre, y en dichas propiedades reservadas trabajen empleados cuyo dni comience por el numero 2.
+
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_huesped_empleadoDni;
+DELIMITER //
+CREATE PROCEDURE proc_obt_huesped_empleadoDni()
+BEGIN
+	CREATE TEMPORARY TABLE temp_resultados AS
+	SELECT
+		h.idHuesped,
+		h.nombres,
+		h.apellidos
+	FROM huesped h
+	JOIN reserva r ON h.idHuesped = r.idHuesped
+	WHERE MONTH(r.fechaReserva) = 12
+	AND r.idPropiedad IN (
+		SELECT p.idPropiedad
+		FROM propiedad p
+		JOIN trabajaEn te ON p.idPropiedad = te.idPropiedad
+		JOIN empleado e ON te.idEmpleado = e.idEmpleado
+		WHERE SUBSTRING(e.dni, 1, 1) = '2'
+	);
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_huesped_empleadoDni();
+```
+
+5. Obtener huespedes que hayan hecho reseñas cuyo comentario contenga palabras como problemas, insatisfactorio, malo, mostrar la calificacion, y asignar un empleado que trabaje en la propiedad reseñada.
+
+
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_huesped_malaExperiencia_empleado;
+DELIMITER //
+CREATE PROCEDURE proc_obt_huesped_malaExperiencia_empleado()
+BEGIN
+	CREATE TEMPORARY TABLE temp_resultados AS
+	SELECT
+		h.idHuesped,
+		h.nombres,
+		h.apellidos,
+		r.calificacion,
+		r.comentario,
+		(
+			SELECT e.idEmpleado
+			FROM propiedad p
+			JOIN trabajaEn te ON p.idPropiedad = te.idPropiedad
+			JOIN empleado e ON te.idEmpleado = e.idEmpleado
+			WHERE p.idPropiedad = r.idPropiedad
+			LIMIT 1
+		) AS idEmpleado,
+		(
+			SELECT CONCAT(e.nombres, ' ', e.apellidos)
+			FROM propiedad p
+			JOIN trabajaEn te ON p.idPropiedad = te.idPropiedad
+			JOIN empleado e ON te.idEmpleado = e.idEmpleado
+			WHERE p.idPropiedad = r.idPropiedad
+			LIMIT 1
+		) AS nombreEmpleado
+	FROM huesped h
+	JOIN resena r ON h.idHuesped = r.idHuesped
+	WHERE
+		r.comentario LIKE '%problemas%'
+		OR r.comentario LIKE '%insatisfactorio%'
+		OR r.comentario LIKE '%malo%';
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_huesped_malaExperiencia_empleado();
+```
+
