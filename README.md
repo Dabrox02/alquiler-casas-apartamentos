@@ -2002,3 +2002,218 @@ DELIMITER ;
 CALL proc_obt_ciudad_masPropiedades_menosEmpleados();
 ```
 
+### CRUD para Tabla reporteEntrega
+- Obtener todos los registros:
+```sql
+  SELECT * FROM reporteEntrega;
+```
+
+- Obtener registro:
+```sql
+  SELECT * FROM reporteEntrega WHERE idReporte = 1;
+```
+
+- Insertar registro:
+```sql
+    INSERT INTO reporteEntrega (idEmpleado, idReserva, fechaReporte, detalle)
+    VALUES (1, 3, '2023-01-15', 'Entrega de llaves y detalles adicionales registrados');
+```
+
+- Actualizar registro:
+```sql
+    UPDATE reporteEntrega SET detalle = 'Se encuentra la entrada en mal estado' WHERE idPropiedad = 1;
+```
+
+- Eliminar registro:
+```sql
+    DELETE FROM reporteEntrega WHERE idReporte = 1;
+```
+
+### Consultas para Tabla reporteEntrega
+
+1. Obtener los reportes de entrega de las propiedades que hayan sido reservadas por mas de 4 dias y posea almenos una calificacion de 3.
+
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_reporteFechaSalida_x_diasEstancia;
+DELIMITER //
+CREATE PROCEDURE proc_obt_reporteFechaSalida_x_diasEstancia()
+BEGIN
+	CREATE TEMPORARY TABLE temp_resultados AS
+	SELECT
+		re.idReporte,
+		re.idEmpleado,
+		re.idReserva,
+		re.fechaReporte,
+		re.detalle,
+		DATE_ADD(r.fechaEntrada, INTERVAL r.diasEstancia DAY) AS fechaSalidaReserva
+	FROM reporteEntrega re
+	JOIN reserva r ON re.idReserva = r.idReserva
+	JOIN huesped h ON r.idHuesped = h.idHuesped
+	WHERE r.diasEstancia > 4
+		AND (h.nombres LIKE '%N%' OR h.apellidos LIKE '%N%');
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_reporteFechaSalida_x_diasEstancia();
+```
+
+2. Obtener la diferencia de dias entre la fecha de reporte de entrega y la fecha de reserva, de las reservas cuyo valor total de la reserva sea mayor al promedio.
+
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_reporte_diferenciaDias_valorReserva;
+DELIMITER //
+CREATE PROCEDURE proc_obt_reporte_diferenciaDias_valorReserva()
+BEGIN
+	CREATE TEMPORARY TABLE temp_resultados AS
+	SELECT
+		re.idReporte,
+		re.idEmpleado,
+		re.idReserva,
+		re.fechaReporte,
+		re.detalle,
+		ABS(DATEDIFF(re.fechaReporte, r.fechaReserva)) AS diferenciaDias,
+		(r.diasEstancia * p.valorxNoche) as valorReserva
+	FROM reporteEntrega re
+	JOIN reserva r ON re.idReserva = r.idReserva
+	JOIN propiedad p ON r.idPropiedad = p.idPropiedad
+	WHERE
+		(r.diasEstancia * p.valorxNoche) > (
+			SELECT AVG(r_sub.diasEstancia * p_sub.valorxNoche)
+			FROM reserva r_sub
+			JOIN propiedad p_sub ON r_sub.idPropiedad = p_sub.idPropiedad
+		);
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_reporte_diferenciaDias_valorReserva();
+```
+
+3. Obtener el total de reportes que posee cada reserva por año, y por cada ciudad, y por cada departamento, incluyendo las reservas que no tuvieron reportes.
+
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_totalReportes_anyo_ciudad_departamento;
+DELIMITER //
+CREATE PROCEDURE proc_obt_totalReportes_anyo_ciudad_departamento()
+BEGIN
+	CREATE TEMPORARY TABLE temp_resultados AS
+	SELECT
+		YEAR(r.fechaReserva) AS anyoReserva,
+		up.ciudad,
+		up.departamento,
+		r.idReserva,
+		COUNT(re.idReporte) AS totalReportes
+	FROM reserva r
+	LEFT JOIN reporteEntrega re ON r.idReserva = re.idReserva
+	JOIN propiedad p ON r.idPropiedad = p.idPropiedad
+	JOIN ubicacionPropiedad up ON p.idPropiedad = up.idPropiedad
+	GROUP BY anyoReserva, up.ciudad, up.departamento, r.idReserva
+	ORDER BY  totalReportes DESC;
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_totalReportes_anyo_ciudad_departamento();
+```
+
+4. Listar los reportes de los empleados que trabajan en una sola propiedad, dicha propiedad debe permitir mascotas, no tener servicios adicionales y estar ubicada en la ciudad de bucaramanga.
+
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_reportes_empleado_propiedad_servicio;
+DELIMITER //
+CREATE PROCEDURE proc_obt_reportes_empleado_propiedad_servicio()
+BEGIN
+	CREATE TEMPORARY TABLE temp_resultados AS
+	SELECT
+		re.idReporte,
+		re.idEmpleado,
+		re.idReserva,
+		re.fechaReporte,
+		re.detalle
+	FROM reporteEntrega re
+	JOIN empleado emp ON re.idEmpleado = emp.idEmpleado
+	JOIN trabajaEn te ON emp.idEmpleado = te.idEmpleado
+	JOIN propiedad p ON te.idPropiedad = p.idPropiedad
+	JOIN detallePropiedad dp ON p.idPropiedad = dp.idPropiedad
+	JOIN ubicacionPropiedad up ON p.idPropiedad = up.idPropiedad
+	WHERE
+		emp.idEmpleado IN (
+			SELECT idEmpleado
+			FROM trabajaEn
+			GROUP BY idEmpleado
+			HAVING COUNT(idPropiedad) = 1
+		)
+		AND dp.mascotas = 'si'
+		AND NOT EXISTS (
+			SELECT 1
+			FROM servicioPropiedad sp
+			WHERE sp.idPropiedad = p.idPropiedad
+		)
+		AND LOWER(up.ciudad) = 'bucaramanga';
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_reportes_empleado_propiedad_servicio();
+```
+
+5. Obtener el reporte de entrega del empleado o los empleados que trabajen en mas propiedades.
+
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_reportes_empleadoTrabajaMas;
+DELIMITER //
+CREATE PROCEDURE proc_obt_reportes_empleadoTrabajaMas()
+BEGIN
+	CREATE TEMPORARY TABLE temp_resultados AS
+	SELECT * FROM reporteEntrega rep
+	WHERE rep.idEmpleado IN (
+		SELECT te.idEmpleado
+		FROM trabajaEn te
+		JOIN (
+			SELECT DISTINCT rep.idEmpleado
+			FROM reporteEntrega rep
+		) emp ON te.idEmpleado = emp.idEmpleado
+		GROUP BY te.idEmpleado
+		HAVING
+			COUNT(DISTINCT te.idPropiedad) = (
+				SELECT MAX(contador)
+				FROM ( SELECT COUNT(DISTINCT te.idPropiedad) AS contador
+					FROM trabajaEn te
+					JOIN reporteEntrega rep ON te.idEmpleado = rep.idEmpleado
+					GROUP BY te.idEmpleado
+				) AS propiedades_contadas
+		)
+	);
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_reportes_empleadoTrabajaMas();
+```
+
