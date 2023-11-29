@@ -2442,3 +2442,208 @@ DELIMITER ;
 CALL proc_obt_reserva_pagoCheque_nombreLargo();
 ```
 
+### CRUD para Tabla resena
+- Obtener todos los registros:
+```sql
+  SELECT * FROM resena;
+```
+
+- Obtener registro por idHuesped o por idPropiedad
+```sql
+  SELECT * FROM resena WHERE idHuesped = 1;
+  SELECT * FROM resena WHERE idPropiedad = 1;
+```
+
+- Insertar registro:
+```sql
+    INSERT INTO resena (idHuesped, idPropiedad, calificacion, comentario)
+    VALUES (5, 1, 4, 'Buena experiencia, lugar acogedor');
+```
+
+- Actualizar registro:
+```sql
+    UPDATE resena SET comentario = 'El sitio requiere mejoras' WHERE idHuesped = 1;
+```
+
+- Eliminar registro por idHuesped o idPropiedad:
+```sql
+    DELETE FROM resena WHERE idHuesped = 1;
+    DELETE FROM resena WHERE idPropiedad = 1;
+```
+
+### Consultas para Tabla resena
+
+1. Obtener la calificacion mas baja de alguna propiedad ubicada en el departamento de Antioquia, mostrar los datos de la propiedad calificada.
+
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_resena_calificacionMasBajaDepartamento;
+DELIMITER //
+CREATE PROCEDURE proc_obt_resena_calificacionMasBajaDepartamento()
+BEGIN
+	CREATE TEMPORARY TABLE temp_resultados AS
+	SELECT res.*, pro.descripcion, pro.valorxNoche FROM resena res, propiedad pro
+	WHERE res.idPropiedad = pro.idPropiedad
+	AND res.calificacion = (
+		SELECT MIN(re.calificacion) 
+		FROM resena re, ubicacionPropiedad ub
+		WHERE ub.idPropiedad = re.idPropiedad
+		AND ub.departamento = 'antioquia')
+	AND res.idPropiedad IN 	(
+		SELECT DISTINCT re.idPropiedad 
+		FROM resena re, ubicacionPropiedad ub
+		WHERE ub.idPropiedad = re.idPropiedad
+		AND ub.departamento = 'antioquia');
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_resena_calificacionMasBajaDepartamento();
+```
+
+2. Obtener total calificaciones por numero de calificacion y ciudad, incluye todas las calificaciones desde la 1 a la 5, incluso si no hay calificaciones.
+
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_totalCalificaciones_por_cadaValorCiudad;
+DELIMITER //
+CREATE PROCEDURE proc_obt_totalCalificaciones_por_cadaValorCiudad()
+BEGIN
+	CREATE TEMPORARY TABLE temp_resultados AS
+	SELECT
+		up.ciudad,
+		calificaciones.numero AS calificacion,
+		COALESCE(COUNT(re.calificacion), 0) AS totalCalificaciones
+	FROM
+	(SELECT 1 AS numero 
+	UNION SELECT 2 
+	UNION SELECT 3 
+	UNION SELECT 4 
+	UNION SELECT 5) calificaciones
+	CROSS JOIN ubicacionPropiedad up
+	LEFT JOIN resena re ON up.idPropiedad = re.idPropiedad AND calificaciones.numero = re.calificacion
+	GROUP BY up.ciudad, calificaciones.numero
+	ORDER BY up.ciudad, calificaciones.numero;
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_totalCalificaciones_por_cadaValorCiudad();
+```
+
+3. Obtener el huesped o los huespedes que mas reseñas ha realizado y el promedio de calificacion que otorga a las propiedades.
+
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_totalResenas_x_huesped;
+DELIMITER //
+CREATE PROCEDURE proc_obt_totalResenas_x_huesped()
+BEGIN
+	CREATE TEMPORARY TABLE temp_resultados AS
+	SELECT
+		idHuesped,
+		nombres,
+		apellidos,
+		(
+			SELECT COUNT(*)
+			FROM resena
+			WHERE idHuesped = h.idHuesped
+		) AS totalResenas,
+		(
+			SELECT AVG(calificacion)
+			FROM resena
+			WHERE idHuesped = h.idHuesped
+		) AS promedioCalificacion
+	FROM huesped h;
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_totalResenas_x_huesped();
+```
+
+4. Obtener los huespedes que realizaron reseñas positivas, por cada reseña positiva se otorgara un bono de descuento del 5% adicional, incluir aquellos que no realizaron ninguna reseña positiva.
+
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_descuento_x_resenaPositiva;
+DELIMITER //
+CREATE PROCEDURE proc_obt_descuento_x_resenaPositiva()
+BEGIN
+	CREATE TEMPORARY TABLE temp_resultados AS
+	SELECT 
+		h.idHuesped,
+		h.nombres,
+		h.apellidos,
+		(	SELECT COUNT(*)
+			FROM resena
+			WHERE idHuesped = h.idHuesped
+			AND calificacion = 5) AS totalResenasPositivas,
+		CONCAT(
+		(
+			SELECT COUNT(*)
+			FROM resena
+			WHERE idHuesped = h.idHuesped 
+			AND calificacion = 5
+			) * 0.05 * 100, '%'
+		) AS descuentoAdicional
+	FROM huesped h;
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_descuento_x_resenaPositiva();
+```
+
+5. Obtener las propiedades reservadas y completadas de los huespedes que han realizado reseñas positivas, y aplicarles un 20% de descuento al pago realizado a cada una de las reservas.
+
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_descuentoAlPago_x_resenaPositiva;
+DELIMITER //
+CREATE PROCEDURE proc_obt_descuentoAlPago_x_resenaPositiva()
+BEGIN
+	CREATE TEMPORARY TABLE temp_resultados AS
+	SELECT
+		r.*,
+		p.idPago,
+		p.fechaPago,
+		p.valorPago,
+		p.medioPago,
+		0.8 * p.valorPago AS valorConDescuento
+	FROM reserva r
+	JOIN pago p ON r.idReserva = p.idReserva
+	WHERE r.idHuesped IN (
+		SELECT DISTINCT idHuesped
+		FROM resena
+		WHERE calificacion = 5
+	)
+	AND r.estado = 'completada';
+
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_descuentoAlPago_x_resenaPositiva();
+```
+
