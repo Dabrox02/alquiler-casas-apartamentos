@@ -94,10 +94,10 @@ Finalmente, los clientes pueden compartir sus experiencias y opiniones mediante 
 
 ## Diseño 
 ### Diagrama Entidad - Relacion
-![](ReadmeAssets/diagrama-entidad-relacion.png)
+![](ReadmeAssets/diagrama-logico-alquiler-propiedad.png)
 
-### Diagrama Relacional
-![](ReadmeAssets/diagrama-relacional-db.png)
+### Diagrama Fisico
+![](ReadmeAssets/diagrama-fisico-alquiler-propiedad.png)
 
 
 ## Consultas Base de Datos
