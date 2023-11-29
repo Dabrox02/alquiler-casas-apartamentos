@@ -2217,3 +2217,228 @@ DELIMITER ;
 CALL proc_obt_reportes_empleadoTrabajaMas();
 ```
 
+### CRUD para Tabla reserva
+- Obtener todos los registros:
+```sql
+  SELECT * FROM reserva;
+```
+
+- Obtener registro:
+```sql
+  SELECT * FROM reserva WHERE idReserva = 1;
+```
+
+- Insertar registro:
+```sql
+    INSERT INTO reserva (idPropiedad, idHuesped, fechaReserva, fechaEntrada, diasEstancia, estado) VALUES
+    (1, 5, '2023-11-25', '2023-12-01', 6, 'confirmado');
+```
+
+- Actualizar registro:
+```sql
+    UPDATE reserva SET fechaReserva = '2023-11-28' WHERE idReserva = 1;
+```
+
+- Eliminar registro:
+```sql
+    DELETE FROM reserva WHERE reserva = 1;
+```
+
+**- Procedimiento cancelar Reserva:**
+```sql
+CALL proc_trans_cancelarReserva(12, "No puedo asistir a la fecha reservada");
+```
+
+### Consultas para Tabla reserva
+
+1. Obtener las propiedades que tienen los mayores ingresos por reservas confirmadas.
+
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_propiedad_masIngresosxReserva;
+DELIMITER //
+CREATE PROCEDURE proc_obt_propiedad_masIngresosxReserva()
+BEGIN
+	CREATE TEMPORARY TABLE temp_resultados AS
+	SELECT
+		p.idPropiedad,
+		p.descripcion,
+		p.valorxNoche,
+		SUM(r.valorEstancia) AS ingresosTotales
+	FROM propiedad p
+	JOIN (
+		-- OBTENER PROPIEDADES ESTADO CONFIRMADO
+		SELECT
+			r.idPropiedad,
+			r.diasEstancia * p.valorxNoche AS valorEstancia
+		FROM reserva r
+		JOIN propiedad p ON r.idPropiedad = p.idPropiedad
+		WHERE r.estado = 'confirmado'
+	) r ON p.idPropiedad = r.idPropiedad
+	GROUP BY p.idPropiedad, p.descripcion, p.valorxNoche
+	HAVING SUM(r.valorEstancia) = (
+			-- MAXIMO INGRESO DE TODAS LAS PROPIEADES
+			SELECT MAX(ingresosPorPropiedad)
+			FROM (
+				-- SUMA DE TODOS LOS INGRESOS POR PROPIEDAD
+				SELECT SUM(r.valorEstancia) AS ingresosPorPropiedad
+				FROM propiedad p
+				JOIN (
+					-- PROPIEDADES ESTADO CONFIRMADO Y VALOR TOTAL
+					SELECT
+						r.idPropiedad,
+						r.diasEstancia * p.valorxNoche AS valorEstancia
+					FROM reserva r
+					JOIN propiedad p ON r.idPropiedad = p.idPropiedad
+					WHERE r.estado = 'confirmado'
+				) r ON p.idPropiedad = r.idPropiedad
+				GROUP BY p.idPropiedad
+			) AS ingresosPropiedades
+		);
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_propiedad_masIngresosxReserva();
+```
+
+2. Agrupar las reservas de propiedades por grupos de dias de 1-5, 6-10, 11-15, y mostrar los nombres de los huespedes y la cantidad de reservas que realizo.
+
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_reservas_porDiasEstancia;
+DELIMITER //
+CREATE PROCEDURE proc_obt_reservas_porDiasEstancia()
+BEGIN
+	CREATE TEMPORARY TABLE temp_resultados AS
+	SELECT
+		CASE
+			WHEN r.diasEstancia BETWEEN 1 AND 5 THEN '1-5'
+			WHEN r.diasEstancia BETWEEN 6 AND 10 THEN '6-10'
+			WHEN r.diasEstancia BETWEEN 11 AND 15 THEN '11-15'
+			-- Agrega más casos según sea necesario
+			ELSE 'Más de 15'
+		END AS grupoDias,
+		h.nombres AS nombresHuesped,
+		h.apellidos AS apellidosHuesped,
+		COUNT(*) AS cantidadReservas
+	FROM
+		reserva r
+	JOIN
+		huesped h ON r.idHuesped = h.idHuesped
+	GROUP BY
+		grupoDias, h.nombres, h.apellidos
+	ORDER BY
+		grupoDias, cantidadReservas DESC;
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_reservas_porDiasEstancia();
+```
+
+3. Obtener las reservas completadas en propiedades que tienen una capacidad de huespedes mayor a 6 y tienen una imagen de la propiedad.
+
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_reservas_porCapacidadHuespedes_img;
+DELIMITER //
+CREATE PROCEDURE proc_obt_reservas_porCapacidadHuespedes_img()
+BEGIN
+	CREATE TEMPORARY TABLE temp_resultados AS
+	SELECT
+		r.*
+	FROM reserva r
+	JOIN propiedad p ON r.idPropiedad = p.idPropiedad
+	JOIN huesped h ON r.idHuesped = h.idHuesped
+	JOIN detallePropiedad dp ON p.idPropiedad = dp.idPropiedad
+	WHERE
+		r.estado = 'completada'
+		AND dp.capacidadHuespedes > 6
+		AND p.idPropiedad IN (
+			SELECT idPropiedad
+			FROM imgPropiedad
+		);
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_reservas_porCapacidadHuespedes_img();
+```
+
+4. Obtener reservas cuya fecha de entrada es mayor a 20 dias a la fecha de realizar la reserva, descartar las reservas canceladas.
+
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_reservas_masDiasEntrada;
+DELIMITER //
+CREATE PROCEDURE proc_obt_reservas_masDiasEntrada()
+BEGIN
+	CREATE TEMPORARY TABLE temp_resultados AS
+	SELECT res.* FROM reserva res
+	JOIN (
+		SELECT re.idReserva FROM reserva re
+		WHERE re.estado != 'cancelado'
+	) re1 ON re1.idReserva = res.idReserva
+	JOIN (
+		SELECT re.idReserva FROM reserva re
+		WHERE DATEDIFF(fechaEntrada, fechaReserva) > 20
+	) re2 ON re2.idReserva = res.idReserva;
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_reservas_masDiasEntrada();
+```
+
+5. Obtener las reservas de las propiedades que se registro pago, su metodo de pago fue cheque y la longitud del nombre del huesped que hizo la reserva es mayor a 5 caracteres.
+
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_reserva_pagoCheque_nombreLargo;
+DELIMITER //
+CREATE PROCEDURE proc_obt_reserva_pagoCheque_nombreLargo()
+BEGIN
+	CREATE TEMPORARY TABLE temp_resultados AS
+	SELECT r.*
+	FROM reserva r
+	WHERE
+		r.idReserva IN (
+			SELECT p.idReserva
+			FROM pago p
+			JOIN reserva r ON p.idReserva = r.idReserva
+			WHERE p.medioPago = 'cheque'
+		)
+		AND r.idHuesped IN (
+			SELECT idHuesped
+			FROM huesped
+			WHERE LENGTH(nombres) > 5
+		)
+		AND r.estado != 'cancelado';
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_reserva_pagoCheque_nombreLargo();
+```
+
