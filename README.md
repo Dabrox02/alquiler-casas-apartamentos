@@ -225,9 +225,9 @@ CALL proc_obt_nombre_cargo_propiedadServicio('gimnasio');
 4. Obtener nombre, telefono y cargo de los empleados que han hecho un reporte de Entrega a una propiedad reservada en el mes de noviembre de cualquier año en la ciudad ingresada.
 
 ```sql
-DROP PROCEDURE IF EXISTS proc_obt_nombre_cargo_propiedadServicio;
+DROP PROCEDURE IF EXISTS proc_obt_empleados_x_reportePropiedad;
 DELIMITER //
-CREATE PROCEDURE proc_obt_nombre_cargo_propiedadServicio(IN nombreCiudad VARCHAR(50))
+CREATE PROCEDURE proc_obt_empleados_x_reportePropiedad(IN nombreCiudad VARCHAR(50))
 BEGIN
     CREATE TEMPORARY TABLE IF NOT EXISTS temp_resultados (
         NombreCompleto VARCHAR(255),
@@ -253,7 +253,7 @@ BEGIN
     DROP TEMPORARY TABLE IF EXISTS temp_resultados;
 END //
 DELIMITER ;
-CALL proc_obt_nombre_cargo_propiedadServicio('bucaramanga');
+CALL proc_obt_empleados_x_reportePropiedad('bucaramanga');
 ```
 
 5. Obtener el nombre cargo y propiedad en las que trabajen los empleados cuya descripcion de la propiedad que contenga la palabra ingresada.
@@ -939,9 +939,9 @@ CALL proc_obt_propiedad_mayorCapacidad_totalHabitaciones();
 5. Obtener el valor por noche de aquellas propiedades que han sido canceladas por clientes que contengan la letra h en su nombre o apellido ordenado ascendentemente.
 
 ```sql
-DROP PROCEDURE IF EXISTS proc_obt_propiedad_mayorCapacidad_totalHabitaciones;
+DROP PROCEDURE IF EXISTS proc_obt_propiedad_cancelada_nombreCliente;
 DELIMITER //
-CREATE PROCEDURE proc_obt_propiedad_mayorCapacidad_totalHabitaciones()
+CREATE PROCEDURE proc_obt_propiedad_cancelada_nombreCliente()
 BEGIN
     CREATE TEMPORARY TABLE IF NOT EXISTS temp_resultados (
         idPropiedad int,
@@ -973,7 +973,7 @@ BEGIN
     DROP TEMPORARY TABLE IF EXISTS temp_resultados;
 END //
 DELIMITER ;
-CALL proc_obt_propiedad_mayorCapacidad_totalHabitaciones();
+CALL proc_obt_propiedad_cancelada_nombreCliente();
 ```
 
 ### CRUD para Tabla servicioPropiedad
@@ -1788,18 +1788,32 @@ CALL proc_obt_propiedad_porDepartamento_promedioHuespedes();
 5. Obtener las propiedades que permiten mascotas, cuyo valor por noche es inferior al promedio y posea calificaciones de 4.
 
 ```sql
-SELECT
-    p.idPropiedad,
-    p.descripcion,
-    p.valorxNoche,
-    dp.mascotas,
-    r.calificacion
-FROM propiedad p
-JOIN detallePropiedad dp ON p.idPropiedad = dp.idPropiedad
-JOIN resena r ON p.idPropiedad = r.idPropiedad
-WHERE dp.mascotas = 'si'
-AND p.valorxNoche < (SELECT AVG(valorxNoche) FROM propiedad)
-AND r.calificacion = 4;
+DROP PROCEDURE IF EXISTS proc_obt_propiedad_siMascotas_valorInferior;
+DELIMITER //
+CREATE PROCEDURE proc_obt_propiedad_siMascotas_valorInferior()
+BEGIN
+	SELECT
+		p.idPropiedad,
+		p.descripcion,
+		p.valorxNoche,
+		dp.mascotas,
+		r.calificacion
+	FROM propiedad p
+	JOIN detallePropiedad dp ON p.idPropiedad = dp.idPropiedad
+	JOIN resena r ON p.idPropiedad = r.idPropiedad
+	WHERE dp.mascotas = 'si'
+	AND p.valorxNoche < (SELECT AVG(valorxNoche) FROM propiedad)
+	AND r.calificacion = 4;
+    
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_propiedad_siMascotas_valorInferior();
 ```
 
 ### CRUD para Tabla ubicacionPropiedad
