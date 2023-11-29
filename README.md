@@ -2669,7 +2669,7 @@ CALL proc_obt_descuentoAlPago_x_resenaPositiva();
     UPDATE huesped SET nombres = 'Maria' WHERE idHuesped = 1;
 ```
 
-- Eliminar registro por idHuesped o idPropiedad:
+- Eliminar registro por idHuesped:
 ```sql
     DELETE FROM huesped WHERE idHuesped = 1;
 ```
@@ -2853,4 +2853,203 @@ END //
 DELIMITER ;
 CALL proc_obt_huesped_malaExperiencia_empleado();
 ```
+
+### CRUD para Tabla pago
+- Obtener todos los registros:
+```sql
+  SELECT * FROM pago;
+```
+
+- Obtener registro:
+```sql
+  SELECT * FROM pago WHERE idPago = 1;
+```
+
+- Insertar registro:
+```sql
+-- EL VALOR DEL PAGO ES OMITIDO, YA QUE ES VERIFICADO Y CALCULADO POR UN TRIGGER
+    INSERT INTO pago (idReserva, fechaPago, valorPago, medioPago) VALUES
+    (1, '2023-11-25', 500000, 'tarjeta');
+```
+
+- Actualizar registro:
+```sql
+    UPDATE pago SET medioPago = 'cheque' WHERE idPago = 1;
+```
+
+- Eliminar registro por idPago:
+```sql
+    DELETE FROM pago WHERE idPago = 1;
+```
+
+### Consultas para Tabla huesped
+
+1. Obtener cantidad de pagos hechos por cada tipo de pago que existe y la suma total del dinero pagado con cada tipo de pago.
+
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_pago_x_tipoPago;
+DELIMITER //
+CREATE PROCEDURE proc_obt_pago_x_tipoPago()
+BEGIN
+	CREATE TEMPORARY TABLE temp_resultados AS
+	SELECT
+    medioPago,
+    COUNT(*) AS cantidadPagos,
+    SUM(valorPago) AS totalDineroPagado
+	FROM pago
+	GROUP BY medioPago
+	ORDER BY totalDineroPagado DESC;
+
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_pago_x_tipoPago();
+```
+
+2. Obtener la reserva cuyo valor de pago es el mayor dentro del tipo de pago cuyo dinero total recaudado es el mayor. 
+
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_reservaPago_mayorPagada;
+DELIMITER //
+CREATE PROCEDURE proc_obt_reservaPago_mayorPagada()
+BEGIN
+	CREATE TEMPORARY TABLE temp_resultados AS
+	SELECT * FROM reserva re
+	WHERE re.idReserva IN(
+		SELECT idReserva FROM pago p
+		WHERE p.medioPago = (
+			SELECT p2.medioPago
+			FROM pago p2
+			GROUP BY p2.medioPago
+			ORDER BY SUM(p2.valorPago) DESC
+			LIMIT 1
+		) AND valorPago = (SELECT MAX(valorPago) FROM pago p
+		WHERE p.medioPago = (
+			SELECT p2.medioPago
+			FROM pago p2
+			GROUP BY p2.medioPago
+			ORDER BY SUM(p2.valorPago) DESC
+			LIMIT 1
+	)));
+
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_reservaPago_mayorPagada();
+```
+
+3. Obtener el valor de los pagos por tipo de pago y fecha en que se realizo el pago, y el nombre de los huespedes que realizaron dicho pago.
+
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_valorPago_huesped;
+DELIMITER //
+CREATE PROCEDURE proc_obt_valorPago_huesped()
+BEGIN
+	CREATE TEMPORARY TABLE temp_resultados AS
+	SELECT
+		medioPago,
+		fechaPago,
+		valorPago,
+		(
+			SELECT nombres
+			FROM huesped h
+			WHERE r.idHuesped = h.idHuesped
+		) AS nombreHuesped
+	FROM pago p
+	JOIN reserva r ON p.idReserva = r.idReserva
+	GROUP BY medioPago, fechaPago;
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_valorPago_huesped();
+```
+
+4. obtener pagos de los huespedes cuyo nombre comienza y termina por la misma letra, adicional muestra el total de reservas completadas que ha realizado dicho cliente.
+
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_pagoHuesped_nombreInicioFinIgual;
+DELIMITER //
+CREATE PROCEDURE proc_obt_pagoHuesped_nombreInicioFinIgual()
+BEGIN
+	CREATE TEMPORARY TABLE temp_resultados AS
+	SELECT
+		h.*,
+		p.idPago,
+		p.fechaPago,
+		p.valorPago,
+		r.idReserva,
+		r.fechaEntrada,
+		r.fechaReserva,
+		(
+			SELECT COUNT(*)
+			FROM reserva r
+			WHERE r.idHuesped = h.idHuesped AND r.estado = 'completada'
+		) AS totalReservasCompletadas
+	FROM huesped h
+	JOIN reserva r ON h.idHuesped = r.idHuesped
+	JOIN pago p ON r.idReserva = p.idReserva
+	WHERE LEFT(h.nombres, 1) = RIGHT(h.nombres, 1)
+	GROUP BY h.idHuesped, p.idPago
+	ORDER BY h.idHuesped, p.fechaPago;
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_pagoHuesped_nombreInicioFinIgual();
+```
+
+5. Obtener el total de pagos realizados a propiedades agrupados por departamento y ciudad, tambien suma el numero de habitaciones de las propiedades pagadas, incluyendo los departamentos y ciudades que no tienen pagos.
+
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_totalRecaudadoPagos_x_departamentoCiudad;
+DELIMITER //
+CREATE PROCEDURE proc_obt_totalRecaudadoPagos_x_departamentoCiudad()
+BEGIN
+	CREATE TEMPORARY TABLE temp_resultados AS
+	SELECT
+		up.departamento,
+		up.ciudad,
+		COALESCE(SUM(p.valorPago), 0) AS totalPagos,
+		COALESCE(SUM(dp.numHabitaciones), 0) AS totalHabitaciones
+	FROM ubicacionPropiedad up
+	LEFT JOIN propiedad prop ON up.idPropiedad = prop.idPropiedad
+	LEFT JOIN detallePropiedad dp ON prop.idPropiedad = dp.idPropiedad
+	LEFT JOIN reserva r ON prop.idPropiedad = r.idPropiedad
+	LEFT JOIN pago p ON r.idReserva = p.idReserva
+	GROUP BY up.departamento, up.ciudad;
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_totalRecaudadoPagos_x_departamentoCiudad();
+```
+
 
