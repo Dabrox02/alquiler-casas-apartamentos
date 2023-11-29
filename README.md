@@ -3052,4 +3052,205 @@ DELIMITER ;
 CALL proc_obt_totalRecaudadoPagos_x_departamentoCiudad();
 ```
 
+### CRUD para Tabla reembolso
+- Obtener todos los registros:
+```sql
+  SELECT * FROM reembolso;
+```
+
+- Obtener registro por id:
+```sql
+    SELECT * FROM reembolso WHERE idPago = 3;
+```
+
+- Insertar registro:
+```sql
+    -- USO EXCLUSIVO DEL PROCEDIMIENTO PARA INSERTAR UN REEMBOLSO CORRECTO
+    CALL proc_trans_cancelarReserva(5, "No viajare al lugar acordado");
+    CALL proc_trans_cancelarReserva(8, "Cambie de opinion");
+    CALL proc_trans_cancelarReserva(12, "No puedo asistir a la fecha reservada");
+```
+
+- Actualizar registro:
+```sql
+    UPDATE reembolso SET motivo = 'No me gusto el lugar' WHERE idPago = 3;
+```
+
+- Eliminar registro:
+```sql
+    DELETE FROM reembolso WHERE idPago = 1;
+```
+
+### Consultas para Tabla reembolso
+
+1. Obtener el total de dinero recaudado de la multa del 10% realizada al valor del pago de la reserva cancelada. 
+
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_totalRecaudadoMultas;
+DELIMITER //
+CREATE PROCEDURE proc_obt_totalRecaudadoMultas()
+BEGIN
+	CREATE TEMPORARY TABLE temp_resultados AS
+	SELECT 
+		SUM(pa.valorPago - re.valorReembolso) as TotalRecaudadoMultas
+	FROM reembolso re, pago pa
+	WHERE re.idPago = pa.idPago;
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_totalRecaudadoMultas();
+```
+
+2. Obtener los huespedes que han realizado un reembolso por una cancelacion de reserva y aplicar la longitud de su nombre completo por 50% que recibra como bono de descuento.
+
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_huespedPago_aplicarDescuentoNombre;
+DELIMITER //
+CREATE PROCEDURE proc_obt_huespedPago_aplicarDescuentoNombre()
+BEGIN
+	CREATE TEMPORARY TABLE temp_resultados AS
+	SELECT
+		h.*,
+		r.idReserva,
+		re.valorReembolso,
+		(
+			SELECT LENGTH(CONCAT(h2.nombres, ' ', h2.apellidos)) * 0.5
+			FROM huesped h2
+			WHERE h2.idHuesped = h.idHuesped
+		) AS descuentoBono
+	FROM huesped h
+	JOIN reserva r ON h.idHuesped = r.idHuesped
+	JOIN pago p ON r.idReserva = p.idReserva
+	JOIN reembolso re ON p.idPago = re.idPago
+	WHERE r.estado = 'cancelado';
+
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_huespedPago_aplicarDescuentoNombre();
+```
+
+3. Obtener el numero total de reembolsos realizado por ciudad, incluyendo ciudades que no se han realizado reembolsos y la suma total del dinero reembolsado. 
+   
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_numReembolsos_x_ciudad;
+DELIMITER //
+CREATE PROCEDURE proc_obt_numReembolsos_x_ciudad()
+BEGIN
+	CREATE TEMPORARY TABLE temp_resultados AS
+	SELECT
+		up.ciudad,
+		COUNT(re.idPago) AS totalReembolsos,
+		(
+			SELECT COALESCE(SUM(re2.valorReembolso), 0)
+			FROM reembolso re2
+			INNER JOIN pago p2 ON re2.idPago = p2.idPago
+			INNER JOIN reserva r2 ON p2.idReserva = r2.idReserva
+			INNER JOIN propiedad prop2 ON r2.idPropiedad = prop2.idPropiedad
+			INNER JOIN ubicacionPropiedad up2 ON prop2.idPropiedad = up2.idPropiedad
+			WHERE up2.ciudad = up.ciudad
+		) AS totalDineroReembolsado
+	FROM ubicacionPropiedad up
+	LEFT JOIN propiedad prop ON up.idPropiedad = prop.idPropiedad
+	LEFT JOIN servicioPropiedad sp ON prop.idPropiedad = sp.idPropiedad
+	LEFT JOIN servicioAdicional sa ON sp.idServicio = sa.idServicio
+	LEFT JOIN reserva r ON prop.idPropiedad = r.idPropiedad
+	LEFT JOIN pago p ON r.idReserva = p.idReserva
+	LEFT JOIN reembolso re ON p.idPago = re.idPago
+	GROUP BY up.ciudad;
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_numReembolsos_x_ciudad();
+```
+
+4. Obtener los empleados que trabajan para las propiedades que se han realizado reembolso de valor reembolsado mayor al promedio del valor de los reembolsos.
+
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_empleadosTrabajan_reembolso;
+DELIMITER //
+CREATE PROCEDURE proc_obt_empleadosTrabajan_reembolso()
+BEGIN
+	CREATE TEMPORARY TABLE temp_resultados AS
+	SELECT
+		e.*
+	FROM empleado e
+	WHERE e.idEmpleado IN (
+			SELECT DISTINCT te.idEmpleado
+			FROM trabajaEn te
+			JOIN propiedad p ON te.idPropiedad = p.idPropiedad
+			JOIN reserva r ON p.idPropiedad = r.idPropiedad
+			JOIN pago pa ON r.idReserva = pa.idReserva
+			JOIN reembolso re ON pa.idPago = re.idPago
+			WHERE
+				re.valorReembolso > (
+					SELECT AVG(re2.valorReembolso)
+					FROM reembolso re2
+				)
+		);
+
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_empleadosTrabajan_reembolso();
+```
+
+5. Obtener los servicios de la propiedad cuyo reembolso es el menor de todos los reembolsos.
+
+```sql
+DROP PROCEDURE IF EXISTS proc_obt_servicios_x_reembolso;
+DELIMITER //
+CREATE PROCEDURE proc_obt_servicios_x_reembolso()
+BEGIN
+	CREATE TEMPORARY TABLE temp_resultados AS
+	SELECT
+		sa.*
+	FROM servicioAdicional sa
+	JOIN servicioPropiedad sp ON sa.idServicio = sp.idServicio
+	JOIN propiedad p ON sp.idPropiedad = p.idPropiedad
+	JOIN reserva r ON p.idPropiedad = r.idPropiedad
+	JOIN pago pa ON r.idReserva = pa.idReserva
+	JOIN reembolso re ON pa.idPago = re.idPago
+	WHERE
+		re.valorReembolso = (
+			SELECT MIN(re2.valorReembolso)
+			FROM reembolso re2
+		);
+
+    IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
+        SELECT 'No hay resultados coincidentes' AS Mensaje;
+    ELSE
+        SELECT * FROM temp_resultados;
+    END IF;
+    DROP TEMPORARY TABLE IF EXISTS temp_resultados;
+END //
+DELIMITER ;
+CALL proc_obt_servicios_x_reembolso();
+```
+
+
 
