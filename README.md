@@ -137,11 +137,8 @@ DROP PROCEDURE IF EXISTS proc_obt_cargo_mas_empleados;
 DELIMITER //
 CREATE PROCEDURE proc_obt_cargo_mas_empleados()
 BEGIN
-    CREATE TEMPORARY TABLE IF NOT EXISTS temp_resultados (
-        Cargo VARCHAR(40)
-    );
-    INSERT INTO temp_resultados (Cargo)
-    SELECT nombre AS Cargo
+    CREATE TEMPORARY TABLE temp_resultados AS
+    SELECT nombre AS NombreCargo
     FROM cargo
     WHERE idCargo = (
         SELECT idCargo
@@ -346,7 +343,7 @@ BEGIN
 		WHERE LOWER(det.mascotas) = 'si' AND det.numBanos >= numBanosMinimo)
 	AND tra.idPropiedad IN (
 		SELECT DISTINCT img.idPropiedad 
-		FROM imgpropiedad img);
+		FROM imgPropiedad img);
         
     IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
         SELECT 'No hay resultados coincidentes' AS Mensaje;
@@ -367,13 +364,7 @@ DROP PROCEDURE IF EXISTS proc_obt_empleados_y_reportes_x_numTotalReporte;
 DELIMITER //
 CREATE PROCEDURE proc_obt_empleados_y_reportes_x_numTotalReporte(IN numReportesMinimo INT)
 BEGIN
-    CREATE TEMPORARY TABLE IF NOT EXISTS temp_resultados (
-		nombreCompleto VARCHAR(255),
-        reportesId VARCHAR(255),
-        numTotalReportes INTEGER
-    );  
-	
-    INSERT INTO temp_resultados(nombreCompleto, reportesId, numTotalReportes)
+	CREATE TEMPORARY TABLE temp_resultados AS
 	SELECT CONCAT(em.nombres, " ", em.apellidos), 
 	GROUP_CONCAT(re.idReporte SEPARATOR ' - '), 
 	COUNT(re.idReporte) 
@@ -383,9 +374,9 @@ BEGIN
 		SELECT em.idEmpleado
 		FROM empleado em, reporteEntrega re
 		WHERE em.idEmpleado = re.idEmpleado
-		GROUP BY em.nombres
+		GROUP BY em.idEmpleado
 		HAVING count(re.idReporte) >= numReportesMinimo)
-	GROUP BY em.nombres;
+	GROUP BY em.nombres, em.apellidos;
         
     IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
         SELECT 'No hay resultados coincidentes' AS Mensaje;
@@ -421,7 +412,7 @@ BEGIN
     PREPARE stmt FROM 
     'INSERT INTO temp_resultados(idEmpleado, dni, nombres, apellidos, telefono, email, idCargo)
     SELECT em.idEmpleado, em.dni, em.nombres, em.apellidos, em.telefono, em.email, em.idCargo
-    FROM empleado em, trabajaen tra, propiedad pro, reserva re, huesped hu
+    FROM empleado em, trabajaEn tra, propiedad pro, reserva re, huesped hu
     WHERE em.idEmpleado = tra.idEmpleado
     AND tra.idPropiedad = pro.idPropiedad
     AND re.idPropiedad = pro.idPropiedad
@@ -434,9 +425,10 @@ BEGIN
     AND hu.idHuesped IN (
         SELECT hue.idHuesped 
         FROM huesped hue
-        WHERE LOWER(LEFT(hue.nombres, 1)) = LOWER(LEFT(@letraBuscada, 1))
+        WHERE LOWER(LEFT(hue.nombres, 1)) = LOWER(LEFT(?, 1))
     )';
-    EXECUTE stmt;
+    EXECUTE stmt USING @letraBuscada;
+
     IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
         SELECT 'No hay resultados coincidentes' AS Mensaje;
     ELSE
@@ -503,7 +495,7 @@ BEGIN
     );
 
 	INSERT INTO temp_resultados(nombreCompleto, cargo)
-	SELECT CONCAT(em.nombres, " ", em.apellidos), c.nombre FROM empleado em, cargo c, trabajaen tra, propiedad pro
+	SELECT CONCAT(em.nombres, " ", em.apellidos), c.nombre FROM empleado em, cargo c, trabajaEn tra, propiedad pro
 	WHERE em.idCargo = c.idCargo
 	AND tra.idEmpleado = em.idEmpleado
 	AND tra.idPropiedad = pro.idPropiedad
@@ -618,10 +610,10 @@ BEGIN
     );
 
 	INSERT INTO temp_resultados
-	SELECT DISTINCT em.* FROM trabajaen tra
+	SELECT DISTINCT em.* FROM trabajaEn tra
 	JOIN empleado em ON em.idEmpleado = tra.idEmpleado
 	JOIN propiedad pro ON pro.idPropiedad = tra.idPropiedad
-	LEFT JOIN serviciopropiedad sep ON pro.idPropiedad = sep.idPropiedad
+	LEFT JOIN servicioPropiedad sep ON pro.idPropiedad = sep.idPropiedad
 	WHERE sep.idPropiedad IS NULL
 	AND tra.idPropiedad IN (
 		SELECT propiedad.idPropiedad
@@ -1374,13 +1366,7 @@ DROP PROCEDURE IF EXISTS proc_obt_serviciosAgrupados_por_mes_pendientes;
 DELIMITER //
 CREATE PROCEDURE proc_obt_serviciosAgrupados_por_mes_pendientes()
 BEGIN
-    CREATE TEMPORARY TABLE IF NOT EXISTS temp_resultados (
-	  mes INT,
-	  nombreServicio VARCHAR(50),
-	  cantidad_reservas INT
-    );
-    
-	INSERT INTO temp_resultados
+    CREATE TEMPORARY TABLE temp_resultados AS
 	SELECT
 		MONTH(r.fechaReserva) AS mes,
 		GROUP_CONCAT(sa.nombreServicio ORDER BY sa.nombreServicio ASC) AS servicios,
@@ -1733,8 +1719,9 @@ BEGIN
 	SELECT
 		u.ciudad,
 		(SELECT COUNT(*)
-		 FROM reserva r
-		 WHERE r.estado = 'cancelado' AND r.idPropiedad = p.idPropiedad) AS NumeroPropiedadesCanceladas
+		 FROM reserva r, propiedad pr
+		 WHERE r.estado = 'cancelado' 
+		 AND r.idPropiedad = pr.idPropiedad) AS NumeroPropiedadesCanceladas
 	FROM ubicacionPropiedad u
 	JOIN propiedad p ON u.idPropiedad = p.idPropiedad
 	JOIN detallePropiedad dp ON p.idPropiedad = dp.idPropiedad
@@ -2989,12 +2976,12 @@ BEGIN
 		valorPago,
 		(
 			SELECT nombres
-			FROM huesped h
+			FROM huesped h, reserva r
 			WHERE r.idHuesped = h.idHuesped
 		) AS nombreHuesped
 	FROM pago p
 	JOIN reserva r ON p.idReserva = r.idReserva
-	GROUP BY medioPago, fechaPago;
+	GROUP BY medioPago, fechaPago, valorPago;
 
     IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
         SELECT 'No hay resultados coincidentes' AS Mensaje;
