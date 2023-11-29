@@ -291,7 +291,8 @@ INSERT INTO pago (idReserva, fechaPago, valorPago, medioPago) VALUES
 (6, '2023-11-30', 400000, 'tarjeta'),
 (8, '2023-12-02', 250000, 'tarjeta'),
 (10, '2023-12-04', 360000, 'tarjeta'),
-(11, '2023-12-05', 480000, 'cheque'), 
+(11, '2023-12-05', 480000, 'cheque'),
+(12, '2023-12-08', 100000, 'cheque'),
 (13, '2023-12-07', 550000, 'efectivo'),
 (15, '2023-12-09', 420000, 'efectivo'),
 (17, '2023-12-11', 390000, 'cheque'), 
@@ -333,3 +334,5 @@ VALUES
   (8, 10, '2023-03-05', 'Revision completa de la propiedad, todo en orden'),
   (1, 13, '2023-04-01', 'Se realizaron las entregas segun lo planeado'),
   (8, 17, '2023-05-18', 'Check-in y entrega de documentacion completados');
+
+
