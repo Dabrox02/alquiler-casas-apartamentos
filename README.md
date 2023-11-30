@@ -2975,13 +2975,14 @@ BEGIN
 		fechaPago,
 		valorPago,
 		(
-			SELECT nombres
+			SELECT DISTINCT nombres
 			FROM huesped h, reserva r
 			WHERE r.idHuesped = h.idHuesped
+			AND p.idReserva = r.idReserva
 		) AS nombreHuesped
 	FROM pago p
 	JOIN reserva r ON p.idReserva = r.idReserva
-	GROUP BY medioPago, fechaPago, valorPago;
+	GROUP BY medioPago, fechaPago, valorPago, nombreHuesped;
 
     IF (SELECT COUNT(*) FROM temp_resultados) = 0 THEN
         SELECT 'No hay resultados coincidentes' AS Mensaje;
@@ -3104,7 +3105,7 @@ CREATE PROCEDURE proc_obt_totalRecaudadoMultas()
 BEGIN
 	CREATE TEMPORARY TABLE temp_resultados AS
 	SELECT 
-		SUM(pa.valorPago - re.valorReembolso) as TotalRecaudadoMultas
+		COALESCE(SUM(pa.valorPago - re.valorReembolso), 0) as TotalRecaudadoMultas
 	FROM reembolso re, pago pa
 	WHERE re.idPago = pa.idPago;
 
